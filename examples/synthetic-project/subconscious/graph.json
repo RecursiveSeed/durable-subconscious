@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "format": "JSON-form YAML 1.2",
+  "project": "Synthetic Inventory",
+  "nodes": [
+    {
+      "id": "inventory.owner",
+      "type": "authority",
+      "label": "Inventory authority"
+    },
+    {
+      "id": "inventory",
+      "type": "system",
+      "label": "Inventory system",
+      "owner": "inventory.owner",
+      "maps": [
+        "subconscious/maps/overview.md",
+        "subconscious/maps/authority.md"
+      ]
+    },
+    {
+      "id": "module.catalog",
+      "type": "module",
+      "label": "Catalog reader",
+      "path": "source/catalog.mjs",
+      "owner": "inventory.owner"
+    },
+    {
+      "id": "module.storage",
+      "type": "module",
+      "label": "Inventory storage reader",
+      "path": "source/storage.mjs",
+      "owner": "inventory.owner"
+    },
+    {
+      "id": "inventory.state",
+      "type": "state",
+      "label": "Stored inventory",
+      "owner": "inventory.owner",
+      "persistent": true,
+      "hydration_owner": "module.storage",
+      "privacy_boundary": "privacy.tenant"
+    },
+    {
+      "id": "inventory.cache",
+      "type": "cache",
+      "label": "Inventory query cache",
+      "owner": "module.catalog",
+      "private": true,
+      "privacy_boundary": "privacy.tenant",
+      "invalidation_owner": "module.storage",
+      "invalidation_rule": "Invalidate after a successful inventory write"
+    },
+    {
+      "id": "privacy.tenant",
+      "type": "privacy",
+      "label": "Synthetic tenant isolation"
+    },
+    {
+      "id": "test.catalog",
+      "type": "test",
+      "label": "Catalog contract test",
+      "path": "test/catalog.test.mjs",
+      "implemented": true
+    },
+    {
+      "id": "journey.list-items",
+      "type": "journey",
+      "label": "List stored items"
+    },
+    {
+      "id": "CAP-001",
+      "type": "capability",
+      "label": "List inventory",
+      "accepted": true,
+      "coverage": {
+        "human_task": "Request the inventory list and verify stored items are returned",
+        "golden": [
+          "journey.list-items"
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "owner-owns-inventory",
+      "from": "inventory.owner",
+      "type": "OWNS",
+      "to": "inventory",
+      "source": "CANONICAL_CONTRACT",
+      "impact": "forward",
+      "evidence": [
+        {
+          "path": "subconscious/maps/authority.md"
+        }
+      ]
+    },
+    {
+      "id": "storage-hydrates-state",
+      "from": "module.storage",
+      "type": "HYDRATES",
+      "to": "inventory.state",
+      "source": "CODE_DISCOVERED",
+      "impact": "forward",
+      "evidence": [
+        {
+          "path": "source/storage.mjs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "state-projects-catalog",
+      "from": "inventory.state",
+      "type": "PROJECTS",
+      "to": "module.catalog",
+      "source": "CODE_DISCOVERED",
+      "impact": "forward",
+      "evidence": [
+        {
+          "path": "source/catalog.mjs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "catalog-caches-query",
+      "from": "module.catalog",
+      "type": "CACHES",
+      "to": "inventory.cache",
+      "source": "CANONICAL_CONTRACT",
+      "impact": "forward",
+      "evidence": [
+        {
+          "path": "subconscious/maps/lifecycle.md"
+        }
+      ]
+    },
+    {
+      "id": "catalog-implements-capability",
+      "from": "module.catalog",
+      "type": "IMPLEMENTS_CAPABILITY",
+      "to": "CAP-001",
+      "source": "CANONICAL_CONTRACT",
+      "impact": "forward",
+      "evidence": [
+        {
+          "path": "subconscious/maps/overview.md"
+        }
+      ]
+    },
+    {
+      "id": "capability-protected-by-test",
+      "from": "CAP-001",
+      "type": "PROTECTED_BY_TEST",
+      "to": "test.catalog",
+      "source": "CODE_DISCOVERED",
+      "impact": "forward",
+      "evidence": [
+        {
+          "path": "test/catalog.test.mjs"
+        }
+      ]
+    },
+    {
+      "id": "state-private-to-tenant",
+      "from": "inventory.state",
+      "type": "MUST_NOT_ACCESS",
+      "to": "privacy.tenant",
+      "source": "HUMAN_APPROVED",
+      "impact": "forward",
+      "evidence": [
+        {
+          "path": "subconscious/maps/privacy.md"
+        }
+      ]
+    }
+  ]
+}

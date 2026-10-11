@@ -1,0 +1,32 @@
+# Dependencies and generated test output
+node_modules/
+coverage/
+.nyc_output/
+tmp/
+temp/
+*.log
+
+# Project-specific Durable Subconscious knowledge and local state
+.durable-subconscious/
+.subconscious/
+**/.durable-subconscious/
+**/.subconscious/
+*.subconscious.local.json
+
+# Credentials and machine-local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+*secrets*.json
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "project_name": "Synthetic Inventory",
+  "graph": "subconscious/graph.json",
+  "memory_files": [
+    "subconscious/maps/overview.md",
+    "subconscious/maps/authority.md",
+    "subconscious/maps/lifecycle.md",
+    "subconscious/maps/privacy.md",
+    "subconscious/maps/test-coverage.md",
+    "subconscious/maps/ripples.md"
+  ],
+  "forbidden_path_segments": [
+    ".git",
+    "node_modules",
+    ".env",
+    "secrets",
+    "credentials"
+  ],
+  "graph_rules": {
+    "capability_coverage_required": true,
+    "expected_capability_count": 1,
+    "required_capability_ids": [
+      "CAP-001"
+    ]
+  }
+}
