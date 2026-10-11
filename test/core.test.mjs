@@ -89,11 +89,12 @@ test('safe paths reject traversal, absolute paths, and project-configured sensit
   assert.ok(safeProjectPath(EXAMPLE, 'source/catalog.mjs', options));
 });
 
-test('impact retrieves owners, persistence, cache, privacy, capability, and test protection', () => {
+test('impact retrieves owners, persistence, cache, privacy, capability, tests, and golden journeys', () => {
   const result = projectImpact(exampleProject(), ['inventory.state']);
   assert.deepEqual(result.unknown, []);
   const ids = new Set(result.reached.map(node => node.id));
-  for (const id of ['inventory.state', 'module.catalog', 'inventory.cache', 'privacy.tenant', 'CAP-001', 'test.catalog', 'inventory.owner']) assert.ok(ids.has(id), id);
+  for (const id of ['inventory.state', 'module.catalog', 'inventory.cache', 'privacy.tenant', 'CAP-001', 'test.catalog', 'journey.list-items', 'inventory.owner']) assert.ok(ids.has(id), id);
+  assert.deepEqual(result.journeys.map(node => node.id), ['journey.list-items']);
   assert.ok(result.maps.includes('subconscious/maps/overview.md'));
 });
 

@@ -202,6 +202,9 @@ export function impact(graph, inputs, { maxDepth = 8, root = process.cwd(), memo
     for (const e of (graph.edges || []).filter(e => e.from === item.id && e.type === 'PROTECTED_BY_TEST')) {
       if (!reached.has(e.to)) reached.set(e.to, { id: e.to, depth: item.depth + 1, via: { from: item.id, edge: e.id, type: e.type, source: e.source } });
     }
+    for (const journey of nodes.get(item.id)?.coverage?.golden || []) {
+      if (!reached.has(journey)) reached.set(journey, { id: journey, depth: item.depth + 1, via: { from: item.id, type: 'GOLDEN_JOURNEY', source: 'CANONICAL_CONTRACT' } });
+    }
   }
   const roots = new Set([...targets, ...rootSystems]);
   for (const e of graph.edges || []) {
