@@ -1,42 +1,102 @@
 # Installation and configuration
 
-## Run directly from a clone
+## Requirements
 
-1. Install Node.js 20 or newer.
-2. Clone this repository.
-3. Run `node bin/durable-subconscious.mjs help` from the repository, or use the absolute path to that file from another project.
+- Node.js 20 or newer
+- A writable project directory
+- npm for the supported project-local installation
+- Codex for the currently verified automatic AI integration
 
-There are no runtime dependencies, build steps, native modules, environment variables, credentials, services, or network calls.
+The package has no runtime dependencies, build step, native module, service,
+credential, or network call after installation.
 
-## Optional global command
+## Project-local installation
 
-For a local developer checkout, `npm link` exposes the `durable-subconscious` command through npm's normal global-link mechanism. This is optional; direct `node` execution is the most explicit setup.
-
-## Initialize a project
-
-```sh
-durable-subconscious init /absolute/path/to/project --name "Project Name"
-```
-
-Without `--name`, the final directory name becomes the project name. Initialization creates a new `.durable-subconscious` directory and fails closed if that directory already exists.
-
-## Use a non-default configuration location
-
-Every read command accepts both a project root and a project-relative configuration path:
+From the target project:
 
 ```sh
-durable-subconscious check --project /absolute/path/to/project --config tools/memory/config.json
+npm install --save-dev github:RecursiveSeed/durable-subconscious
 ```
 
-The configuration and configured graph must remain inside the project root. Graph node paths, map paths, gap evidence, and edge evidence must also be project-relative and inside that root.
+For development from a checked-out copy, npm can install the local directory:
+
+```sh
+npm install --save-dev /absolute/path/to/durable-subconscious
+```
+
+Both forms place the executable in the project's normal npm command path. Use it
+without downloading or falling back to a global package:
+
+```sh
+npx --no-install durable-subconscious help
+```
+
+## Supported Codex setup
+
+Give a fresh Codex session the exact setup prompt published in `README.md`. That
+session runs:
+
+```sh
+npx --no-install durable-subconscious setup . --agent codex
+```
+
+The command performs two bounded operations:
+
+1. Atomically creates `.durable-subconscious/` when it is absent. Existing project
+   knowledge is never reinitialized.
+2. Creates or refreshes one managed Durable Subconscious block in root
+   `AGENTS.md`. Existing content remains outside the block.
+
+Repeated setup is idempotent. Only Codex is currently verified; no universal
+AI-agent compatibility is claimed.
+
+## Removal and recovery
+
+Remove only the managed block:
+
+```sh
+npx --no-install durable-subconscious integrate codex --project . --remove
+```
+
+Restore the exact pre-install instruction file when safe:
+
+```sh
+npx --no-install durable-subconscious integrate codex --project . --restore
+```
+
+Recovery refuses to overwrite later changes outside the managed block. The
+pre-install manifest and backup are stored under
+`.durable-subconscious/integrations/codex/`.
+
+Removing the integration does not delete project knowledge. Removing
+`.durable-subconscious/` itself is a separate project-data decision and is never
+performed by the removal command.
+
+## Core-only initialization
+
+Projects using an unsupported agent may initialize the agent-independent core:
+
+```sh
+npx --no-install durable-subconscious init . --name "Project Name"
+```
+
+This creates the knowledge directory but no persistent agent instructions.
 
 ## Validate installation
 
-From this repository:
+```sh
+npx --no-install durable-subconscious check --project . --strict-coverage
+```
+
+See `docs/SCHEMA.md` for capability coverage, golden journeys, typed gaps, and
+privacy/storage decisions. Structural success is not proof that arbitrary source
+contains no unrecorded capability.
+
+## Development verification
+
+From the Durable Subconscious repository:
 
 ```sh
 npm test
 npm run check:example
 ```
-
-The first command exercises initialization, persistence across independent processes, impact retrieval, project isolation, validation failure modes, lexical discovery, and the synthetic example. The second validates the example graph directly.

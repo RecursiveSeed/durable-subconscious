@@ -8,6 +8,14 @@ import { spawnSync } from 'node:child_process';
 import { discover } from '../src/discover.mjs';
 import { initializeProject } from '../src/initialize.mjs';
 import {
+  CODEX_BLOCK_END,
+  CODEX_BLOCK_START,
+  installCodexIntegration,
+  removeCodexIntegration,
+  restoreCodexIntegration,
+  setupCodex,
+} from '../src/codex-integration.mjs';
+import {
   checkGraph,
   EDGE_TYPES,
   impact,
@@ -162,11 +170,137 @@ test('unfamiliar projects initialize, persist across processes, and remain isola
   }
 });
 
+test('Codex setup preserves existing instructions and is idempotent and removable', () => {
+  const testTemporaryRoot = path.join(REPOSITORY, 'test', 'tmp');
+  fs.mkdirSync(testTemporaryRoot, { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(testTemporaryRoot, 'codex-integration-'));
+  const project = path.join(temporary, 'project');
+  fs.mkdirSync(project);
+  const agents = path.join(project, 'AGENTS.md');
+  const original = '# Existing project instructions\n\nPreserve this line.\n';
+  fs.writeFileSync(agents, original);
+  try {
+    const first = setupCodex(project, { projectName: 'Codex Integration Test' });
+    assert.equal(first.initialized, true);
+    assert.equal(first.integration.status, 'installed');
+    const installed = fs.readFileSync(agents, 'utf8');
+    assert.ok(installed.startsWith(original));
+    assert.equal(installed.split(CODEX_BLOCK_START).length - 1, 1);
+    assert.equal(installed.split(CODEX_BLOCK_END).length - 1, 1);
+    assert.ok(fs.existsSync(path.join(project, '.durable-subconscious', 'agent-guide.md')));
+    assert.equal(JSON.parse(fs.readFileSync(path.join(project, '.durable-subconscious', 'config.json'))).graph_rules.capability_coverage_required, true);
+
+    const second = setupCodex(project, { projectName: 'Ignored On Repeat' });
+    assert.equal(second.initialized, false);
+    assert.equal(second.integration.status, 'unchanged');
+    assert.equal(fs.readFileSync(agents, 'utf8'), installed);
+
+    const removed = removeCodexIntegration(project);
+    assert.equal(removed.status, 'removed');
+    assert.equal(fs.readFileSync(agents, 'utf8'), original);
+    assert.ok(fs.existsSync(path.join(project, '.durable-subconscious', 'graph.json')));
+
+    installCodexIntegration(project);
+    const restored = restoreCodexIntegration(project);
+    assert.equal(restored.status, 'restored');
+    assert.equal(fs.readFileSync(agents, 'utf8'), original);
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test('Codex integration preserves later external edits and recovery fails closed', () => {
+  const testTemporaryRoot = path.join(REPOSITORY, 'test', 'tmp');
+  fs.mkdirSync(testTemporaryRoot, { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(testTemporaryRoot, 'codex-external-edit-'));
+  const project = path.join(temporary, 'project');
+  fs.mkdirSync(project);
+  const agents = path.join(project, 'AGENTS.md');
+  const original = '# Existing\n';
+  fs.writeFileSync(agents, original);
+  try {
+    setupCodex(project);
+    fs.appendFileSync(agents, '\n# Later project instruction\n');
+    assert.throws(() => restoreCodexIntegration(project), /refusing to overwrite later project instructions/);
+    removeCodexIntegration(project);
+    const afterRemoval = fs.readFileSync(agents, 'utf8');
+    assert.ok(afterRemoval.includes('# Existing'));
+    assert.ok(afterRemoval.includes('# Later project instruction'));
+    assert.doesNotMatch(afterRemoval, /durable-subconscious:codex/);
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test('Codex integration safely resumes after a partial recovery-backup write', () => {
+  const testTemporaryRoot = path.join(REPOSITORY, 'test', 'tmp');
+  fs.mkdirSync(testTemporaryRoot, { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(testTemporaryRoot, 'codex-partial-recovery-'));
+  const project = path.join(temporary, 'project');
+  fs.mkdirSync(project);
+  const agents = path.join(project, 'AGENTS.md');
+  const original = '# Existing\n';
+  fs.writeFileSync(agents, original);
+  try {
+    initializeProject(project);
+    const integrationDirectory = path.join(project, '.durable-subconscious', 'integrations', 'codex');
+    fs.mkdirSync(integrationDirectory, { recursive: true });
+    fs.writeFileSync(path.join(integrationDirectory, 'AGENTS.md.before-integration'), original);
+    const installed = installCodexIntegration(project);
+    assert.equal(installed.status, 'installed');
+    assert.ok(fs.existsSync(path.join(integrationDirectory, 'manifest.json')));
+    assert.ok(fs.readFileSync(agents, 'utf8').includes(CODEX_BLOCK_START));
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test('Codex setup removes newly created state after malformed instruction failure', () => {
+  const testTemporaryRoot = path.join(REPOSITORY, 'test', 'tmp');
+  fs.mkdirSync(testTemporaryRoot, { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(testTemporaryRoot, 'codex-recovery-'));
+  const project = path.join(temporary, 'project');
+  fs.mkdirSync(project);
+  const agents = path.join(project, 'AGENTS.md');
+  const malformed = `# Existing\n${CODEX_BLOCK_START}\nmissing end\n`;
+  fs.writeFileSync(agents, malformed);
+  try {
+    assert.throws(() => setupCodex(project), /malformed or duplicate/);
+    assert.equal(fs.readFileSync(agents, 'utf8'), malformed);
+    assert.equal(fs.existsSync(path.join(project, '.durable-subconscious')), false);
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test('Codex setup and removal work through the project-local CLI contract', () => {
+  const testTemporaryRoot = path.join(REPOSITORY, 'test', 'tmp');
+  fs.mkdirSync(testTemporaryRoot, { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(testTemporaryRoot, 'codex-cli-'));
+  const project = path.join(temporary, 'project');
+  fs.mkdirSync(project);
+  try {
+    const setup = run(['setup', project, '--agent', 'codex', '--name', 'CLI Project']);
+    assert.equal(setup.status, 0, setup.stderr);
+    assert.equal(JSON.parse(setup.stdout).initialized, true);
+    const repeated = run(['setup', project, '--agent', 'codex']);
+    assert.equal(repeated.status, 0, repeated.stderr);
+    assert.equal(JSON.parse(repeated.stdout).integration.status, 'unchanged');
+    const remove = run(['integrate', 'codex', '--project', project, '--remove']);
+    assert.equal(remove.status, 0, remove.stderr);
+    assert.equal(fs.existsSync(path.join(project, 'AGENTS.md')), false);
+    assert.ok(fs.existsSync(path.join(project, '.durable-subconscious', 'graph.json')));
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
 test('shipped runtime is standalone and contains no host-project or machine path dependency', () => {
   const runtimeFiles = [
     'src/subconscious-lib.mjs',
     'src/discover.mjs',
     'src/initialize.mjs',
+    'src/codex-integration.mjs',
     'bin/durable-subconscious.mjs',
   ];
   for (const relative of runtimeFiles) {
@@ -183,4 +317,6 @@ test('package metadata declares AGPL-3.0-only and no dependencies', () => {
   assert.equal(packageJson.license, 'AGPL-3.0-only');
   assert.equal(packageJson.dependencies, undefined);
   assert.equal(packageJson.devDependencies, undefined);
+  assert.ok(packageJson.files.includes('docs'));
+  assert.ok(packageJson.files.includes('examples'));
 });

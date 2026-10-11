@@ -1,6 +1,6 @@
 {
   "name": "durable-subconscious",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Local, durable architectural memory and dependency-impact tooling for software projects",
   "type": "module",
   "license": "AGPL-3.0-only",
@@ -10,6 +10,17 @@
   "bin": {
     "durable-subconscious": "bin/durable-subconscious.mjs"
   },
+  "files": [
+    "bin",
+    "docs",
+    "examples",
+    "src",
+    "CONTRIBUTING.md",
+    "INSTALL.md",
+    "LICENSE",
+    "README.md",
+    "SECURITY.md"
+  ],
   "scripts": {
     "check:example": "node bin/durable-subconscious.mjs check --project examples/synthetic-project --config subconscious/config.json",
     "discover:example": "node bin/durable-subconscious.mjs discover --project examples/synthetic-project --config subconscious/config.json",

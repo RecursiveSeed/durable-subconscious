@@ -12,6 +12,7 @@ The system is deliberately not a source of product truth. Project code and accep
 - Read-only lexical discovery of literal JavaScript imports and `/api/` strings from explicitly mapped module files. Discovery never evaluates project code.
 - Project-local configuration, graph, and prose maps that survive process and machine restarts when the project directory is preserved.
 - Isolation by project root: paths outside the selected root, absolute evidence paths, traversal, and configured sensitive path segments are rejected.
+- Opt-in Codex integration through a preserved, managed block in the project's root `AGENTS.md`.
 - No runtime packages or external services. The implementation uses Node.js built-ins only.
 
 ## Architecture
@@ -45,35 +46,68 @@ Each edge declares an impact direction (`forward`, `reverse`, `both`, or `none`)
 - A writable project directory for initialization and knowledge maintenance.
 - Git is optional for normal use and recommended for reviewing non-private graph changes.
 
-No database, account, network service, package installation, or original host application is required.
+Beyond installing the project-local package, no database, account, network
+service, or original host application is required.
 
-## Quick start
+## Install in a project
 
-Clone this repository, then initialize an unfamiliar project:
+Durable Subconscious is installed as a project-local development dependency. From
+the target project:
 
 ```sh
-node /path/to/durable-subconscious/bin/durable-subconscious.mjs init /path/to/your-project
+npm install --save-dev github:RecursiveSeed/durable-subconscious
 ```
 
-Initialization creates `/path/to/your-project/.durable-subconscious/`. It refuses to overwrite an existing knowledge directory.
+This provides `npx --no-install durable-subconscious` without relying on a separate
+clone or machine-global command. There are no runtime dependencies.
+
+## Exact Codex setup prompt
+
+Start a fresh Codex session in the project and give it exactly this one prompt:
+
+```text
+Set up the installed Durable Subconscious for this project. Run `npx --no-install durable-subconscious setup . --agent codex`, then read `.durable-subconscious/agent-guide.md` and follow its First mapping section completely. Inspect the actual project source, tests, configuration, and accepted architecture documents; populate an evidence-backed graph and maps; keep uncertainty as typed gaps; do not disable validation rules; run the project tests; and finish by running `npx --no-install durable-subconscious check --project . --strict-coverage` plus representative impact queries. Preserve every pre-existing project instruction and report any unresolved gaps or integration failures.
+```
+
+The setup command initializes `.durable-subconscious/` and installs an identifiable
+managed block into the root `AGENTS.md`. Existing instructions are preserved. The
+first session reads the generated guide explicitly because its process began before
+the new `AGENTS.md` existed. Subsequent Codex sessions load the root instructions
+normally and therefore consult and maintain the knowledge without repeating the
+setup prompt.
+
+Setup is idempotent. It does not reinitialize or overwrite existing project
+knowledge.
+
+## Manual initialization
+
+For core-only or unsupported-agent use:
+
+```sh
+npx --no-install durable-subconscious init .
+```
+
+Initialization creates `.durable-subconscious/` and refuses to overwrite an
+existing knowledge directory. Core initialization does not install an AI-agent
+integration.
 
 Validate the new project memory:
 
 ```sh
-node /path/to/durable-subconscious/bin/durable-subconscious.mjs check --project /path/to/your-project
+npx --no-install durable-subconscious check --project .
 ```
 
 Edit the project-local graph and maps as evidence is established, then query a node or mapped file:
 
 ```sh
-node /path/to/durable-subconscious/bin/durable-subconscious.mjs impact project --project /path/to/your-project
-node /path/to/durable-subconscious/bin/durable-subconscious.mjs impact src/server.mjs --project /path/to/your-project --json
+npx --no-install durable-subconscious impact project --project .
+npx --no-install durable-subconscious impact src/server.mjs --project . --json
 ```
 
 Run read-only lexical discovery over module nodes already present in that graph:
 
 ```sh
-node /path/to/durable-subconscious/bin/durable-subconscious.mjs discover --project /path/to/your-project
+npx --no-install durable-subconscious discover --project .
 ```
 
 See [`examples/synthetic-project`](examples/synthetic-project) for a complete fictional project with a configured capability, persistence, privacy, cache, test, and journey chain.
@@ -110,6 +144,39 @@ Paths are resolved against the selected project root. Absolute paths and `..` tr
 
 `expected_capability_count` and `required_capability_ids` are optional project contracts. They replace hard-coded assumptions about any one product's capability inventory.
 
+See [`docs/SCHEMA.md`](docs/SCHEMA.md) for complete node, edge, capability
+coverage, human-task, golden-journey, and typed-gap formats. Installation does not
+require the developer to author these structures manually; the setup prompt directs
+Codex to populate them from project evidence.
+
+## Codex integration lifecycle
+
+Codex is the only verified automatic agent integration in this release. The core
+graph, validator, impact query, discovery, and storage remain agent-independent.
+
+Install or refresh only the managed block:
+
+```sh
+npx --no-install durable-subconscious integrate codex --project .
+```
+
+Remove the managed block while preserving other `AGENTS.md` content:
+
+```sh
+npx --no-install durable-subconscious integrate codex --project . --remove
+```
+
+Restore the exact pre-install `AGENTS.md` when it has not subsequently been edited:
+
+```sh
+npx --no-install durable-subconscious integrate codex --project . --restore
+```
+
+The integration records a recovery manifest and, when applicable, an exact backup
+under `.durable-subconscious/integrations/codex/`. Malformed or duplicate managed
+markers cause a fail-closed error. Recovery refuses to overwrite later project
+instruction changes.
+
 ## Maintaining knowledge
 
 Use the same evidence-first loop for every material change:
@@ -131,7 +198,7 @@ Application code may import `writeGraphAtomic` from `src/subconscious-lib.mjs` w
 
 ## Privacy and distribution
 
-The initialized `.durable-subconscious/` directory is local project knowledge and may contain architectural or security-sensitive relationships. This repository's `.gitignore` excludes project-specific knowledge, credentials, caches, logs, and local state by default. Decide deliberately whether any project map is safe and useful to publish.
+The initialized `.durable-subconscious/` directory is local project knowledge and may contain architectural or security-sensitive relationships. The package cannot choose the target project's sharing policy. Add it to that project's `.gitignore` to keep it local, or commit reviewed knowledge when the team deliberately wants to share it. Apply the same access controls and backup policy as the source project.
 
 The included example contains synthetic names and data only. No production project graph, evidence corpus, credentials, authored content, personal information, runtime database, or machine-specific path is part of this distribution.
 
@@ -150,6 +217,7 @@ The package has no install dependencies. `npm install` is not required to run th
 - Lexical discovery is partial static evidence. Comments, dynamic imports, computed routes, and runtime data flow require review.
 - A graph is durable memory, not exhaustive program analysis.
 - Impact results are conservative regression candidates, not a claim that every returned component will change.
+- Validation cannot detect every capability missing from the declared graph. The verified Codex workflow is the stale-graph control; other agents require their own persistent instruction integration.
 - The system does not call models, providers, browsers, or project runtimes.
 
 ## Contributing and security
