@@ -1,8 +1,6 @@
 name: Independent integration test
 description: Report a complete agent-session acceptance run.
 title: "[Integration test]: <agent> on <platform>"
-labels:
-  - integration-test
 body:
   - type: markdown
     attributes:
