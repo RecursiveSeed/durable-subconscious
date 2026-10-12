@@ -7,6 +7,12 @@ instruction file. Every adapter loads the same project-local
 `.durable-subconscious/agent-guide.md`; there are no agent-specific forks of the
 operating lifecycle.
 
+v0.3.0 is designated a **Public Beta Candidate**. It is not a claim of universal
+compatibility or guaranteed automatic behavior across AI systems. Codex is the
+only integration independently verified through fresh agent sessions for this
+candidate. The other five integrations are adapter-tested but agent-session
+**UNVERIFIED**.
+
 ## Status definitions
 
 - **Independently verified:** an installed package was exercised in an unfamiliar

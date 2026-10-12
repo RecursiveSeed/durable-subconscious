@@ -4,6 +4,14 @@ Durable Subconscious is a local, file-backed architectural memory for software p
 
 The system is deliberately not a source of product truth. Project code and accepted project documents remain authoritative. The graph remembers proven relationships and makes uncertainty visible; it does not infer permission or turn a structural check into functional acceptance.
 
+> **Release status:** v0.3.0 is a **Public Beta Candidate**. The Codex
+> integration is independently verified end to end. Claude Code, Cursor, GitHub
+> Copilot, Gemini CLI, and OpenCode have documented instruction mechanisms and
+> tested adapters, but have not been verified in independent agent sessions.
+> This release does not claim universal compatibility or guarantee automatic
+> lifecycle behavior across AI systems. See [release notes](RELEASE_NOTES.md) and
+> [the compatibility evidence](docs/COMPATIBILITY.md).
+
 ## Capabilities
 
 - A typed, evidence-bearing dependency graph stored as JSON-form YAML 1.2.
@@ -162,6 +170,11 @@ The core graph, validator, impact query, discovery, storage, and canonical
 `.durable-subconscious/agent-guide.md` are agent-independent. Adapters only connect
 that guide to the selected environment's documented persistent project
 instructions.
+
+This matrix is deliberately not a universal-compatibility claim. Automatic
+consultation and maintenance depend on the selected external agent loading and
+following its project instructions; only the Codex path has been independently
+observed doing so across fresh sessions in v0.3.0.
 
 | Environment | Installed instruction | Status in v0.3.0 |
 | --- | --- | --- |
