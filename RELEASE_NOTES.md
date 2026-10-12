@@ -1,8 +1,8 @@
 # Release notes
 
-## Unreleased — proposed v0.4.0
+## v0.4.0 — Evidence Freshness (2026-10-11)
 
-This candidate adds a compatibility-affecting reliability gate: `check` and
+This release adds a compatibility-affecting reliability gate: `check` and
 `impact` now distinguish current, stale, and unknown evidence using a project-local
 reconciled fingerprint baseline and bounded source inventory. Stale relationships
 are retained as historical memory but are not presented as verified current facts.
@@ -12,6 +12,11 @@ after explicit agent or developer review. Read-only commands never update trust;
 prior baselines are archived; repeated reconciliation is idempotent; and changes
 during verification or reconciliation fail safely. The canonical agent guide now
 includes the human-triggered reconciliation prompt and lifecycle.
+
+`check` and `impact` use exit code `3` for stale or unknown evidence. Structural
+errors and strict-coverage gaps remain exit code `1`. Reconciliation can preserve
+typed gaps while marking reviewed bytes current; it never converts those unresolved
+relationships into certified semantic facts.
 
 The graph and configuration schemas remain version `1`, the package remains
 dependency-free and AGPL-3.0-only, and existing agent adapters are preserved. This
@@ -25,13 +30,27 @@ silently accepts old project memory as current.
 
 ### Community acknowledgment
 
-**Theodor N. Engøy (Turnfeed)** — “Identified the need to test whether independent
-source-code changes can leave Durable Subconscious relying on stale architectural
-relationships. Suggestion developed with Codex assistance.”
+**Theodor N. Engøy (Turnfeed)**
+
+"Identified the need to test whether independent source-code changes can leave Durable Subconscious relying on stale architectural relationships. Suggestion developed with Codex assistance."
 
 This credits the community testing suggestion. The CEO specified the two-layer
 verification design, and Codex implemented and tested the resulting change; the
 contributor is not represented as its implementer or verifier.
+
+### Executed v0.4.0 release checks
+
+- 35 of 35 focused core and integration tests passed.
+- 36 of 36 canonical tests passed when the synthetic example test was included.
+- The workspace-inclusive `npm test` run passed 106 of 106 discovered tests; this
+  count includes ignored investigation fixtures that are not packaged.
+- A clean project installed the packed v0.4.0 tarball, preserved existing agent
+  instructions, initialized, reconciled, and passed structural/freshness checks.
+- The packed artifact contained 32 intended files, no bundled dependencies, and
+  no temporary investigation fixtures.
+- The dependency advisory audit reported zero known vulnerabilities, and the
+  release security scan found no credentials, private keys, tokens, machine paths,
+  or private project evidence.
 
 ## v0.3.0 — Public Beta Candidate
 

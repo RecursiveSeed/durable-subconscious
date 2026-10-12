@@ -315,6 +315,33 @@ test('human-triggered reconciliation is explicit, preserves history, and is idem
   }
 });
 
+test('reconciliation preserves unresolved relationships without certifying them as complete', () => {
+  const { root } = createFreshnessFixture('freshness-gap-');
+  try {
+    const project = loadProject({ root });
+    const service = project.graph.nodes.find(node => node.id === 'module.service');
+    service.gaps = [{
+      code: 'RELATIONSHIP_UNRESOLVED',
+      reason: 'Runtime registration may add consumers that are not established by current evidence',
+      evidence: '.durable-subconscious/maps/overview.md',
+    }];
+    writeGraphAtomic(project.graph, project.graphPath, { root });
+    const reconciled = reconcileProject(loadProject({ root }), { acceptCurrentEvidence: true });
+    assert.equal(reconciled.status, 'updated');
+    assert.equal(reconciled.gaps, 1);
+    const current = loadProject({ root });
+    assert.equal(verifyProjectFreshness(current).status, 'current');
+    assert.equal(run(['check', '--project', root, '--json']).status, 0);
+    const strict = run(['check', '--project', root, '--json', '--strict-coverage']);
+    assert.equal(strict.status, 1);
+    const checked = JSON.parse(strict.stdout);
+    assert.equal(checked.summary.freshness_status, 'current');
+    assert.ok(checked.gaps.some(gap => gap.code === 'RELATIONSHIP_UNRESOLVED'));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('changes during verification or reconciliation are detected and never advance the baseline', () => {
   const verificationFixture = createFreshnessFixture('freshness-race-verify-');
   const reconciliationFixture = createFreshnessFixture('freshness-race-reconcile-');

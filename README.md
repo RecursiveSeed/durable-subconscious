@@ -8,7 +8,7 @@ packages, cloud service, or model-provider dependency.
 
 The system is deliberately not a source of product truth. Project code and accepted project documents remain authoritative. The graph remembers proven relationships and makes uncertainty visible; it does not infer permission or turn a structural check into functional acceptance.
 
-> **Release status:** v0.3.0 is a **Public Beta Candidate**. The Codex
+> **Release status:** v0.4.0 is a **Public Beta**. The Codex
 > integration is independently verified end to end. Claude Code, Cursor, GitHub
 > Copilot, Gemini CLI, and OpenCode have documented instruction mechanisms and
 > tested adapters, but have not been verified in independent agent sessions.
@@ -218,9 +218,9 @@ instructions.
 This matrix is deliberately not a universal-compatibility claim. Automatic
 consultation and maintenance depend on the selected external agent loading and
 following its project instructions; only the Codex path has been independently
-observed doing so across fresh sessions in v0.3.0.
+observed doing so across fresh sessions in v0.4.0.
 
-| Environment | Installed instruction | Status in v0.3.0 |
+| Environment | Installed instruction | Status in v0.4.0 |
 | --- | --- | --- |
 | OpenAI Codex | `AGENTS.md` | Independently verified end to end |
 | Claude Code | `CLAUDE.md` | Documented mechanism; adapter tested; agent session unverified |

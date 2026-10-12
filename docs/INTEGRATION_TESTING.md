@@ -4,7 +4,7 @@ This is the single acceptance protocol for Claude Code, Cursor, GitHub Copilot,
 Gemini CLI, and OpenCode. It tests whether an actual agent—not merely its adapter
 file—consults and maintains Durable Subconscious across fresh sessions.
 
-Codex passed this protocol for v0.3.0. The five environments above remain
+Codex passed this protocol for v0.4.0. The five environments above remain
 agent-session **UNVERIFIED** until evidence from this complete protocol is reviewed.
 
 ## Result definitions
@@ -129,12 +129,11 @@ documentation, adapter tests, or a successful first session.
 
 ## Community-originated freshness test
 
-The external-change scenario in Sessions 2 and 3 originated with **Theodor N.
-Engøy (Turnfeed)**:
+The external-change scenario in Sessions 2 and 3 originated with:
 
-> Identified the need to test whether independent source-code changes can leave
-> Durable Subconscious relying on stale architectural relationships. Suggestion
-> developed with Codex assistance.
+**Theodor N. Engøy (Turnfeed)**
+
+"Identified the need to test whether independent source-code changes can leave Durable Subconscious relying on stale architectural relationships. Suggestion developed with Codex assistance."
 
 This acknowledgment credits the testing suggestion. The CEO specified the
 two-layer verification design, and Codex implemented and tested it; the contributor

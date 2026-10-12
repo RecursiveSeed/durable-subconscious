@@ -29,6 +29,10 @@ are separated from verified-current connections. `impact` exits `3` and requires
 source review before a decision relies on them. Read-only commands never update
 the baseline.
 
+`check` also exits `3` when freshness is stale or unknown. Structural failures and
+strict-coverage gaps remain a separate exit `1`; freshness cannot convert those
+conditions into a pass.
+
 Targeted impact verification hashes the target, directly connected evidence, and
 the traversed knowledge slice. It lists the bounded source inventory without
 rehashing every unrelated file. Full `check` verifies the complete configured
@@ -58,6 +62,11 @@ impact cannot mark changed evidence current. Reconciliation fails when structura
 errors exist, evidence is unavailable, another reconciliation is running, or the
 project changes during the snapshot. A repeated reconciliation with identical
 evidence is idempotent and does not rewrite the baseline.
+
+Reconciliation may retain explicit typed gaps. In that case the byte evidence can
+be `current` while the architectural relationship remains unresolved, and
+`check --strict-coverage` continues to fail. Accepting a fingerprint baseline does
+not certify a gap, inferred relationship, or semantic claim as correct.
 
 When a baseline changes, the prior manifest is retained under
 `.durable-subconscious/freshness-history/`. This preserves the earlier evidence
