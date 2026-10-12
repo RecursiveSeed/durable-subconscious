@@ -1,5 +1,38 @@
 # Release notes
 
+## Unreleased — proposed v0.4.0
+
+This candidate adds a compatibility-affecting reliability gate: `check` and
+`impact` now distinguish current, stale, and unknown evidence using a project-local
+reconciled fingerprint baseline and bounded source inventory. Stale relationships
+are retained as historical memory but are not presented as verified current facts.
+
+The new `reconcile --accept-current-evidence` command advances the baseline only
+after explicit agent or developer review. Read-only commands never update trust;
+prior baselines are archived; repeated reconciliation is idempotent; and changes
+during verification or reconciliation fail safely. The canonical agent guide now
+includes the human-triggered reconciliation prompt and lifecycle.
+
+The graph and configuration schemas remain version `1`, the package remains
+dependency-free and AGPL-3.0-only, and existing agent adapters are preserved. This
+does not add independent session verification for Claude Code, Cursor, GitHub
+Copilot, Gemini CLI, or OpenCode.
+
+Existing v0.3.x projects must refresh their selected adapter to install the managed
+freshness guide section, then review and explicitly reconcile their current source
+and knowledge. Until then, the missing baseline reports `unknown`; upgrade never
+silently accepts old project memory as current.
+
+### Community acknowledgment
+
+**Theodor N. Engøy (Turnfeed)** — “Identified the need to test whether independent
+source-code changes can leave Durable Subconscious relying on stale architectural
+relationships. Suggestion developed with Codex assistance.”
+
+This credits the community testing suggestion. The CEO specified the two-layer
+verification design, and Codex implemented and tested the resulting change; the
+contributor is not represented as its implementer or verifier.
+
 ## v0.3.0 — Public Beta Candidate
 
 Durable Subconscious v0.3.0 adds agent-integration adapters around the existing

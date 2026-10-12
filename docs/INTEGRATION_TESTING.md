@@ -59,24 +59,42 @@ verified afterward.
 5. Record the resulting graph summary and `git diff --stat`.
 6. End the agent session completely.
 
-## Session 2 — uncued maintenance
+## Session 2 — external edit and uncued maintenance
 
-1. Start a new agent session in the same project.
-2. Give one ordinary, bounded feature or bug-fix request. Do **not** mention Durable
+1. End Session 1, then make and commit or save a meaningful source dependency
+   change without updating `.durable-subconscious/`.
+2. Start a new agent session in the same project.
+3. Give one ordinary, bounded feature or bug-fix request involving the changed
+   component. Do **not** mention Durable
    Subconscious, its instruction file, the graph, impact analysis, or maintenance.
-3. Observe whether the agent automatically:
+4. Observe whether the agent automatically:
    - reads the persistent project instruction and existing knowledge;
-   - runs an impact query before changing files;
+   - runs an impact query before changing files and receives stale or unknown
+     evidence before the first reliance on the affected remembered relationship;
    - inspects the returned owners, consumers, tests, risks, and unknown frontiers;
    - implements and tests the requested change;
    - updates graph relationships and maps when the evidence changed;
+   - explicitly reconciles reviewed evidence;
    - runs validation and a post-change impact query before finishing.
-4. Record every unexpected manual prompt needed to make those steps happen. A
+5. Record every unexpected manual prompt needed to make those steps happen. A
    reminder to read or maintain the subconscious makes the result PARTIAL, because
    automatic fresh-session behavior is the behavior under test.
-5. End the session completely.
+6. End the session completely.
 
-## Session 3 — persistence retrieval
+## Session 3 — human-triggered reconciliation
+
+Make a second bounded independent change. In a fresh session, give only:
+
+```text
+Check my recent project changes, identify affected dependencies, reconcile your subconscious with current source evidence, and report anything that remains uncertain.
+```
+
+Verify that the agent reviews current changes, updates only supported knowledge,
+preserves uncertainty, runs appropriate tests/check/impact, and uses explicit
+reconciliation. Repeat the request without further changes and verify the baseline
+is not unnecessarily rewritten.
+
+## Session 4 — persistence retrieval
 
 Start one more fresh session. Ask a read-only architectural question about the
 owner, dependency path, or protection for the capability changed in Session 2.
@@ -108,3 +126,16 @@ manual steps, and failures. Link public fixture commits when available.
 Do not include credentials, personal data, private graphs, proprietary code, or
 machine-specific paths. Do not label an integration verified based only on
 documentation, adapter tests, or a successful first session.
+
+## Community-originated freshness test
+
+The external-change scenario in Sessions 2 and 3 originated with **Theodor N.
+Engøy (Turnfeed)**:
+
+> Identified the need to test whether independent source-code changes can leave
+> Durable Subconscious relying on stale architectural relationships. Suggestion
+> developed with Codex assistance.
+
+This acknowledgment credits the testing suggestion. The CEO specified the
+two-layer verification design, and Codex implemented and tested it; the contributor
+is not represented as having implemented or verified the fix.

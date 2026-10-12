@@ -58,6 +58,21 @@ The canonical workflow remains `.durable-subconscious/agent-guide.md`; adapters 
 not copy or fork its requirements. See `docs/COMPATIBILITY.md` for the distinction
 between independently verified and documented-but-unverified environments.
 
+## Upgrade from v0.3.x
+
+After installing the new package version, refresh the already selected adapter:
+
+```sh
+npx --no-install durable-subconscious integrate <agent> --project .
+```
+
+This adds or refreshes one managed freshness section in the canonical agent guide
+without replacing project-authored instructions. A pre-existing project initially
+has no reconciled fingerprint baseline, so `check` and `impact` safely report
+`unknown`. Review the existing graph and maps against current source before using
+the explicit `reconcile --accept-current-evidence` command below. Upgrade never
+silently marks existing evidence current.
+
 ## Removal and recovery
 
 Remove only the managed block:
@@ -92,6 +107,15 @@ This creates the knowledge directory but no persistent agent instructions.
 
 ## Validate installation
 
+After the first evidence-backed mapping and project tests, explicitly establish the
+reviewed baseline:
+
+```sh
+npx --no-install durable-subconscious reconcile --project . --accept-current-evidence
+```
+
+Then validate structure and freshness:
+
 ```sh
 npx --no-install durable-subconscious check --project . --strict-coverage
 ```
@@ -99,6 +123,10 @@ npx --no-install durable-subconscious check --project . --strict-coverage
 See `docs/SCHEMA.md` for capability coverage, golden journeys, typed gaps, and
 privacy/storage decisions. Structural success is not proof that arbitrary source
 contains no unrecorded capability.
+
+For later independent changes, give the agent the human reconciliation prompt in
+[`docs/FRESHNESS.md`](docs/FRESHNESS.md). `check`, `impact`, and `discover` are
+read-only and never advance the trusted baseline.
 
 ## Development verification
 

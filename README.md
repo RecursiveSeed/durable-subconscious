@@ -34,6 +34,9 @@ only its own persistent instruction adapter. No database or account is required.
 - A typed, evidence-bearing dependency graph stored as JSON-form YAML 1.2.
 - Structural validation for ownership, persistence/hydration, cache invalidation, worker staleness/recovery, privacy boundaries, providers, capabilities, executable regression protection, and explicit gaps.
 - Recursive impact queries with bounded traversal, cycle handling, ownership context, protection leaves, and disclosed depth/co-location frontiers.
+- Project-local evidence fingerprints and bounded source inventory that distinguish
+  current, stale, and unknown memories before impact results are presented as
+  verified current knowledge.
 - Read-only lexical discovery of literal JavaScript imports and `/api/` strings from explicitly mapped module files. Discovery never evaluates project code.
 - Project-local configuration, graph, and prose maps that survive process and machine restarts when the project directory is preserved.
 - Isolation by project root: paths outside the selected root, absolute evidence paths, traversal, and configured sensitive path segments are rejected.
@@ -52,11 +55,13 @@ project source and evidence
           |
           +--> graph.json ----> validate ----> explicit errors and known gaps
           |         |
-          |         +---------> impact query ----> owners, consumers, tests, risks
+          |         +---------> freshness gate --> impact owners, consumers, tests, risks
           |         |
           |         +---------> discovery -------> lexical evidence for review
           |
           +--> maps/*.md -----> durable prose context and unresolved frontiers
+          |
+          +--> freshness.json -> reconciled hashes + bounded source inventory
 ```
 
 The graph uses three controlled vocabularies:
@@ -94,7 +99,7 @@ Start a fresh session in one of the supported AI coding environments and give it
 this one prompt:
 
 ```text
-Set up the installed Durable Subconscious for this project. Identify which supported coding agent you are—codex, claude, cursor, copilot, gemini, or opencode—then run `npx --no-install durable-subconscious setup . --agent <agent>`, substituting that identifier. Read `.durable-subconscious/agent-guide.md` and follow its First mapping section completely. Inspect the actual project source, tests, configuration, and accepted architecture documents; populate an evidence-backed graph and maps; keep uncertainty as typed gaps; do not disable validation rules; run the project tests; and finish by running `npx --no-install durable-subconscious check --project . --strict-coverage` plus representative impact queries. Preserve every pre-existing project instruction and report any unresolved gaps or integration failures.
+Set up the installed Durable Subconscious for this project. Identify which supported coding agent you are—codex, claude, cursor, copilot, gemini, or opencode—then run `npx --no-install durable-subconscious setup . --agent <agent>`, substituting that identifier. Read `.durable-subconscious/agent-guide.md` and follow its First mapping section completely. Inspect the actual project source, tests, configuration, and accepted architecture documents; populate an evidence-backed graph and maps; keep uncertainty as typed gaps; do not disable validation rules; run the project tests; establish the reviewed baseline with `npx --no-install durable-subconscious reconcile --project . --accept-current-evidence`; and finish by running `npx --no-install durable-subconscious check --project . --strict-coverage` plus representative impact queries. Preserve every pre-existing project instruction and report any unresolved gaps or integration failures.
 ```
 
 The explicit identifier is the dependable path. `--agent auto` is also available
@@ -111,6 +116,21 @@ and are directed to consult and maintain the same project-local knowledge.
 Setup is idempotent. It does not reinitialize or overwrite existing project
 knowledge.
 
+### Upgrading an existing installation
+
+After upgrading from v0.3.x, rerun the selected adapter command once so the
+canonical agent guide receives the managed freshness requirements while preserving
+all existing project-authored instructions:
+
+```sh
+npx --no-install durable-subconscious integrate <agent> --project .
+```
+
+The first new `check` or `impact` reports freshness as `unknown` until an agent or
+developer reviews the existing knowledge against current source and explicitly
+runs `reconcile --accept-current-evidence`. This migration never accepts the
+current files automatically.
+
 ## Manual initialization
 
 For core-only or unsupported-agent use:
@@ -123,9 +143,11 @@ Initialization creates `.durable-subconscious/` and refuses to overwrite an
 existing knowledge directory. Core initialization does not install an AI-agent
 integration.
 
-Validate the new project memory:
+After mapping and reviewing the new project memory, establish its initial freshness
+baseline and validate it:
 
 ```sh
+npx --no-install durable-subconscious reconcile --project . --accept-current-evidence
 npx --no-install durable-subconscious check --project .
 ```
 
@@ -153,6 +175,7 @@ The default file is `.durable-subconscious/config.json` inside the target projec
   "schema_version": 1,
   "project_name": "your-project",
   "graph": ".durable-subconscious/graph.json",
+  "freshness": ".durable-subconscious/freshness.json",
   "memory_files": [
     ".durable-subconscious/maps/overview.md",
     ".durable-subconscious/maps/authority.md"
@@ -175,6 +198,10 @@ The default file is `.durable-subconscious/config.json` inside the target projec
 Paths are resolved against the selected project root. Absolute paths and `..` traversal are rejected. Add project-specific sensitive directory or file names to `forbidden_path_segments`; matching is case-insensitive and also blocks a filename whose extension is removed before comparison.
 
 `expected_capability_count` and `required_capability_ids` are optional project contracts. They replace hard-coded assumptions about any one product's capability inventory.
+
+`freshness` names the project-local reconciled evidence manifest. Optional
+`freshness_rules.source_roots` and `freshness_rules.source_extensions` can narrow
+the bounded source inventory. Defaults are derived from mapped source/test nodes.
 
 See [`docs/SCHEMA.md`](docs/SCHEMA.md) for complete node, edge, capability
 coverage, human-task, golden-journey, and typed-gap formats. Installation does not
@@ -255,20 +282,40 @@ changes.
 
 Use the same evidence-first loop for every material change:
 
-1. Query the proposed file, node, or capability with `impact`.
+1. Query the proposed file, node, or capability with `impact`. Stop and inspect
+   current source when freshness is stale or unknown.
 2. Inspect the earliest proven owner and actual writers/readers.
 3. Verify persistence/hydration, caches/invalidation, asynchronous stale/recovery behavior, privacy boundaries, and connected tests.
 4. Add or correct graph nodes and edges only when a source path or accepted document supports them.
 5. Record uncertainty as a typed gap with a reason and evidence path; do not invent a relationship to make validation green.
-6. Run `check`, the relevant project tests, and the impact query again.
+6. Run the relevant project tests and structural validation.
+7. After the source and knowledge are reconciled, explicitly run
+   `reconcile --accept-current-evidence`.
+8. Run `check` and the impact query again. Do not finish while relevant evidence
+   remains stale or unknown.
+
+After independent human changes, a developer can simply tell the AI:
+
+```text
+Check my recent project changes, identify affected dependencies, reconcile your subconscious with current source evidence, and report anything that remains uncertain.
+```
+
+See [evidence freshness and reconciliation](docs/FRESHNESS.md) for the trust model,
+source inventory, race handling, and privacy rules.
 
 Application code may import `writeGraphAtomic` from `src/subconscious-lib.mjs` when it needs to persist a reviewed graph update without exposing partial JSON. The command-line tool intentionally does not guess nodes or mutate an existing graph.
 
 ## Check semantics
 
-`check` exits nonzero for structural errors. `check --strict-coverage` also exits nonzero when acknowledged gaps remain. A normal structural pass means the graph is internally coherent and its referenced files exist. It does not prove that product behavior works, that every dependency is mapped, or that a human workflow passed.
+`check` reports structural validation and freshness separately. It exits `1` for
+structural errors or strict-coverage gaps and exits `3` when evidence is stale or
+unknown. A structural pass means only that the declared graph is internally
+coherent; it is not a freshness or functional acceptance result.
 
-`impact` exits `2` when any requested target is unknown. An empty result is never treated as proof that a target has no dependencies.
+`impact` exits `2` when a requested target is unknown and `3` when remembered
+relationships cannot be verified against the reconciled evidence baseline. Its
+output separates verified-current connections from stale or unknown remembered
+connections. An empty result is never proof that a target has no dependencies.
 
 ## Privacy and distribution
 
@@ -289,6 +336,7 @@ The package has no install dependencies. `npm install` is not required to run th
 ## Limits
 
 - Lexical discovery is partial static evidence. Comments, dynamic imports, computed routes, and runtime data flow require review.
+- Freshness hashes are change detectors, not semantic correctness certificates.
 - A graph is durable memory, not exhaustive program analysis.
 - Impact results are conservative regression candidates, not a claim that every returned component will change.
 - Validation cannot detect every capability missing from the declared graph. A

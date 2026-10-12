@@ -7,6 +7,12 @@ instruction file. Every adapter loads the same project-local
 `.durable-subconscious/agent-guide.md`; there are no agent-specific forks of the
 operating lifecycle.
 
+The core freshness gate and explicit reconciliation command are agent-independent.
+Adapters receive the same instruction to stop on stale or unknown evidence and to
+advance a baseline only after evidence-backed reconciliation. This does not add
+new agent-session verification: only Codex has the independent end-to-end status
+described below; the five other environments remain agent-session **UNVERIFIED**.
+
 v0.3.0 is designated a **Public Beta Candidate**. It is not a claim of universal
 compatibility or guaranteed automatic behavior across AI systems. Codex is the
 only integration independently verified through fresh agent sessions for this

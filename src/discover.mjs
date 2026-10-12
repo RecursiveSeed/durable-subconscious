@@ -28,6 +28,18 @@ export function discover(files, { root = process.cwd(), forbiddenPathSegments = 
       }
       imports.push({ file: rel, target, line: lineAt(match.index) });
     }
+    for (const match of text.matchAll(/\bimport\s*\(\s*([^)]*)\)/g)) {
+      const expression = match[1].trim();
+      if (!/^(?:["']\.[^"']+["'])$/.test(expression)) {
+        unresolved.push({ file: rel, reason: 'dynamic or nonliteral import requires review', line: lineAt(match.index) });
+      }
+    }
+    for (const match of text.matchAll(/\brequire\s*\(\s*([^)]*)\)/g)) {
+      const expression = match[1].trim();
+      if (!/^(?:["']\.[^"']+["'])$/.test(expression)) {
+        unresolved.push({ file: rel, reason: 'dynamic or nonliteral require requires review', line: lineAt(match.index) });
+      }
+    }
     for (const match of text.matchAll(/["'`]((?:\/api\/)[a-zA-Z0-9_./:-]+)/g)) {
       apiStrings.push({ file: rel, route: match[1], line: lineAt(match.index), interpretation: 'literal API string only; declaration/call/authorization not inferred' });
     }

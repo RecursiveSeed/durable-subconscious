@@ -6,7 +6,21 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { discover } from '../src/discover.mjs';
-import { AGENT_GUIDE, initializeProject } from '../src/initialize.mjs';
+import {
+  applyFreshnessToImpact,
+  projectFreshnessPath,
+  readFreshnessBaseline,
+  reconcileProject,
+  verifyImpactFreshness,
+  verifyProjectFreshness,
+} from '../src/freshness.mjs';
+import {
+  AGENT_GUIDE,
+  ensureAgentGuide,
+  FRESHNESS_GUIDE_BLOCK_END,
+  FRESHNESS_GUIDE_BLOCK_START,
+  initializeProject,
+} from '../src/initialize.mjs';
 import {
   detectAgent,
   installAgentIntegration,
@@ -48,6 +62,50 @@ function exampleProject() {
 
 function run(args, options = {}) {
   return spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf8', ...options });
+}
+
+function createFreshnessFixture(prefix = 'freshness-') {
+  const testTemporaryRoot = path.join(REPOSITORY, 'test', 'tmp');
+  fs.mkdirSync(testTemporaryRoot, { recursive: true });
+  const root = fs.mkdtempSync(path.join(testTemporaryRoot, prefix));
+  initializeProject(root, { projectName: 'Freshness Fixture' });
+  fs.mkdirSync(path.join(root, 'src'));
+  fs.mkdirSync(path.join(root, 'test'));
+  fs.writeFileSync(path.join(root, 'src', 'store.mjs'), "export const read = id => id === 'known' ? { id } : null;\n");
+  fs.writeFileSync(path.join(root, 'src', 'service.mjs'), "import { read } from './store.mjs';\nexport const lookup = id => read(id);\n");
+  fs.writeFileSync(path.join(root, 'test', 'service.test.mjs'), "import test from 'node:test';\nimport assert from 'node:assert/strict';\nimport { lookup } from '../src/service.mjs';\ntest('lookup', () => assert.deepEqual(lookup('known'), { id: 'known' }));\n");
+  const project = loadProject({ root });
+  project.config.graph_rules.expected_capability_count = 1;
+  project.config.graph_rules.required_capability_ids = ['CAP-001'];
+  fs.writeFileSync(project.configPath, `${JSON.stringify(project.config, null, 2)}\n`);
+  project.graph.nodes.push(
+    { id: 'module.store', type: 'module', label: 'Store', path: 'src/store.mjs', owner: 'project.maintainer' },
+    { id: 'module.service', type: 'module', label: 'Service', path: 'src/service.mjs', owner: 'project.maintainer' },
+    { id: 'test.service', type: 'test', label: 'Service test', path: 'test/service.test.mjs', implemented: true },
+    { id: 'journey.lookup', type: 'journey', label: 'Lookup an item', path: 'test/service.test.mjs' },
+    {
+      id: 'CAP-001', type: 'capability', label: 'Lookup', path: 'src/service.mjs', owner: 'project.maintainer', accepted: true,
+      coverage: { human_task: 'Look up a known item', golden: ['journey.lookup'] },
+    },
+  );
+  project.graph.edges.push(
+    {
+      id: 'service-consumes-store', from: 'module.service', type: 'CONSUMES', to: 'module.store', source: 'CODE_DISCOVERED', impact: 'reverse',
+      evidence: [{ path: 'src/service.mjs', line: 1 }],
+    },
+    {
+      id: 'service-implements-lookup', from: 'module.service', type: 'IMPLEMENTS_CAPABILITY', to: 'CAP-001', source: 'CODE_DISCOVERED', impact: 'forward',
+      evidence: [{ path: 'src/service.mjs', line: 2 }],
+    },
+    {
+      id: 'lookup-protected', from: 'CAP-001', type: 'PROTECTED_BY_TEST', to: 'test.service', source: 'CODE_DISCOVERED', impact: 'forward',
+      evidence: [{ path: 'test/service.test.mjs', line: 4 }],
+    },
+  );
+  writeGraphAtomic(project.graph, project.graphPath, { root });
+  const loaded = loadProject({ root });
+  reconcileProject(loaded, { acceptCurrentEvidence: true });
+  return { root, project: loadProject({ root }) };
 }
 
 test('controlled vocabularies preserve the original typed model', () => {
@@ -122,6 +180,185 @@ test('lexical discovery is read-only and reports literal import and API evidence
   assert.deepEqual(result.unresolved, []);
 });
 
+test('unchanged reconciled evidence remains current and read-only commands do not rewrite its baseline', () => {
+  const { root, project } = createFreshnessFixture('freshness-current-');
+  try {
+    const baselinePath = projectFreshnessPath(project);
+    const before = fs.readFileSync(baselinePath, 'utf8');
+    const baseline = readFreshnessBaseline(project);
+    assert.equal(baseline.schema_version, 1);
+    assert.equal(before.includes(root.replace(/\\/g, '/')), false);
+    assert.equal(before.includes('export const lookup'), false);
+    fs.mkdirSync(path.join(root, 'src', 'secrets'));
+    fs.writeFileSync(path.join(root, 'src', 'secrets', 'credential.js'), 'PRIVATE_VALUE=not-a-real-secret\n');
+    const remembered = projectImpact(project, ['src/service.mjs']);
+    const verification = verifyImpactFreshness(project, remembered);
+    assert.equal(verification.status, 'current');
+    const result = applyFreshnessToImpact(remembered, verification);
+    assert.ok(result.verified_direct.length > 0);
+    assert.deepEqual(result.unverified_direct, []);
+    assert.equal(result.verified_current, true);
+    assert.equal(run(['check', '--project', root, '--json']).status, 0);
+    assert.equal(run(['impact', 'src/service.mjs', '--project', root, '--json']).status, 0);
+    assert.equal(fs.readFileSync(baselinePath, 'utf8'), before);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('external dependency rewiring is stale before impact can present the old relationship as current', () => {
+  const { root } = createFreshnessFixture('freshness-rewire-');
+  try {
+    fs.writeFileSync(path.join(root, 'src', 'cache.mjs'), "import { read } from './store.mjs';\nexport const cachedRead = id => read(id);\n");
+    fs.writeFileSync(path.join(root, 'src', 'service.mjs'), "import { cachedRead } from './cache.mjs';\nexport const lookup = id => cachedRead(id);\n");
+    const project = loadProject({ root });
+    assert.deepEqual(checkGraph(project.graph, projectCheckOptions(project)).errors, []);
+    const remembered = projectImpact(project, ['src/service.mjs']);
+    const verification = verifyImpactFreshness(project, remembered);
+    assert.equal(verification.status, 'stale');
+    assert.ok(verification.stale.includes('src/service.mjs'));
+    assert.ok(verification.relevant_inventory.added.includes('src/cache.mjs'));
+    const result = applyFreshnessToImpact(remembered, verification);
+    assert.equal(result.verified_current, false);
+    assert.equal(result.verified_direct.length, 0);
+    assert.ok(result.unverified_direct.some(edge => edge.id === 'service-consumes-store'));
+    const cli = run(['impact', 'src/service.mjs', '--project', root, '--json']);
+    assert.equal(cli.status, 3);
+    assert.equal(JSON.parse(cli.stdout).freshness.status, 'stale');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('deleted or renamed mapped functionality is stale even when replacement source exists', () => {
+  const { root } = createFreshnessFixture('freshness-rename-');
+  try {
+    fs.renameSync(path.join(root, 'src', 'store.mjs'), path.join(root, 'src', 'storage.mjs'));
+    fs.writeFileSync(path.join(root, 'src', 'service.mjs'), "import { read } from './storage.mjs';\nexport const lookup = id => read(id);\n");
+    const project = loadProject({ root });
+    const remembered = projectImpact(project, ['src/service.mjs']);
+    const verification = verifyImpactFreshness(project, remembered);
+    assert.equal(verification.status, 'stale');
+    assert.ok(verification.stale.includes('src/store.mjs'));
+    assert.ok(verification.stale.includes('src/service.mjs'));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a newly added dependency is disclosed while unrelated changes do not invalidate targeted impact', () => {
+  const added = createFreshnessFixture('freshness-added-');
+  const unrelated = createFreshnessFixture('freshness-unrelated-');
+  const unrelatedSource = createFreshnessFixture('freshness-unrelated-source-');
+  try {
+    fs.writeFileSync(path.join(added.root, 'src', 'audit.mjs'), 'export const record = () => {};\n');
+    fs.writeFileSync(path.join(added.root, 'src', 'service.mjs'), "import { read } from './store.mjs';\nimport { record } from './audit.mjs';\nexport const lookup = id => { record(id); return read(id); };\n");
+    const addedProject = loadProject({ root: added.root });
+    const addedVerification = verifyImpactFreshness(addedProject, projectImpact(addedProject, ['src/service.mjs']));
+    assert.equal(addedVerification.status, 'stale');
+    assert.ok(addedVerification.relevant_inventory.added.includes('src/audit.mjs'));
+
+    fs.mkdirSync(path.join(unrelated.root, 'docs'));
+    fs.writeFileSync(path.join(unrelated.root, 'docs', 'operations.md'), '# Unrelated note\n');
+    const unrelatedProject = loadProject({ root: unrelated.root });
+    assert.equal(verifyImpactFreshness(unrelatedProject, projectImpact(unrelatedProject, ['src/service.mjs'])).status, 'current');
+    assert.equal(verifyProjectFreshness(unrelatedProject).status, 'current');
+
+    fs.writeFileSync(path.join(unrelatedSource.root, 'src', 'standalone.mjs'), 'export const unrelated = true;\n');
+    const sourceProject = loadProject({ root: unrelatedSource.root });
+    const sourceVerification = verifyImpactFreshness(sourceProject, projectImpact(sourceProject, ['src/service.mjs']));
+    assert.equal(sourceVerification.status, 'current');
+    assert.ok(sourceVerification.relevant_inventory.observed_unrelated_additions.includes('src/standalone.mjs'));
+    assert.equal(verifyProjectFreshness(sourceProject).status, 'stale');
+  } finally {
+    fs.rmSync(added.root, { recursive: true, force: true });
+    fs.rmSync(unrelated.root, { recursive: true, force: true });
+    fs.rmSync(unrelatedSource.root, { recursive: true, force: true });
+  }
+});
+
+test('dynamic dependencies remain unknown after reconciliation instead of becoming verified by a hash match', () => {
+  const { root } = createFreshnessFixture('freshness-dynamic-');
+  try {
+    fs.writeFileSync(path.join(root, 'src', 'service.mjs'), "export async function lookup(id) { const target = './store.mjs'; const { read } = await import(target); return read(id); }\n");
+    const changed = loadProject({ root });
+    assert.equal(verifyProjectFreshness(changed).status, 'stale');
+    assert.equal(reconcileProject(changed, { acceptCurrentEvidence: true }).status, 'updated');
+    const current = loadProject({ root });
+    const verification = verifyImpactFreshness(current, projectImpact(current, ['src/service.mjs']));
+    assert.equal(verification.status, 'unknown');
+    assert.ok(verification.unknown.some(value => value.includes('dynamic or nonliteral import')));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('human-triggered reconciliation is explicit, preserves history, and is idempotent', () => {
+  const { root } = createFreshnessFixture('freshness-reconcile-');
+  try {
+    const source = path.join(root, 'src', 'service.mjs');
+    fs.appendFileSync(source, '// reviewed implementation note\n');
+    let project = loadProject({ root });
+    assert.equal(verifyProjectFreshness(project).status, 'stale');
+    assert.throws(() => reconcileProject(project), /--accept-current-evidence/);
+    const updated = reconcileProject(project, { acceptCurrentEvidence: true });
+    assert.equal(updated.status, 'updated');
+    const history = path.join(root, '.durable-subconscious', 'freshness-history');
+    assert.ok(fs.readdirSync(history).some(name => name.endsWith('.json')));
+    project = loadProject({ root });
+    assert.equal(verifyProjectFreshness(project).status, 'current');
+    const before = fs.readFileSync(projectFreshnessPath(project), 'utf8');
+    assert.equal(reconcileProject(project, { acceptCurrentEvidence: true }).status, 'unchanged');
+    assert.equal(fs.readFileSync(projectFreshnessPath(project), 'utf8'), before);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('changes during verification or reconciliation are detected and never advance the baseline', () => {
+  const verificationFixture = createFreshnessFixture('freshness-race-verify-');
+  const reconciliationFixture = createFreshnessFixture('freshness-race-reconcile-');
+  try {
+    const verification = verifyProjectFreshness(verificationFixture.project, {
+      afterFirstPass: () => fs.appendFileSync(path.join(verificationFixture.root, 'src', 'service.mjs'), '// concurrent change\n'),
+    });
+    assert.notEqual(verification.status, 'current');
+    assert.ok(verification.unknown.some(value => value.includes('changed during verification')));
+
+    const baselinePath = projectFreshnessPath(reconciliationFixture.project);
+    const before = fs.readFileSync(baselinePath, 'utf8');
+    fs.appendFileSync(path.join(reconciliationFixture.root, 'src', 'service.mjs'), '// reviewed change before reconciliation\n');
+    assert.throws(
+      () => reconcileProject(reconciliationFixture.project, {
+        acceptCurrentEvidence: true,
+        afterSecondSnapshot: () => fs.appendFileSync(path.join(reconciliationFixture.root, 'src', 'service.mjs'), '// concurrent reconciliation change\n'),
+      }),
+      /changed during reconciliation/,
+    );
+    assert.equal(fs.readFileSync(baselinePath, 'utf8'), before);
+  } finally {
+    fs.rmSync(verificationFixture.root, { recursive: true, force: true });
+    fs.rmSync(reconciliationFixture.root, { recursive: true, force: true });
+  }
+});
+
+test('structural validation success and freshness failure remain distinct in CLI reporting', () => {
+  const { root } = createFreshnessFixture('freshness-structural-');
+  try {
+    fs.appendFileSync(path.join(root, 'src', 'service.mjs'), '// external change\n');
+    const project = loadProject({ root });
+    assert.equal(checkGraph(project.graph, projectCheckOptions(project)).errors.length, 0);
+    const checked = run(['check', '--project', root, '--json']);
+    assert.equal(checked.status, 3);
+    const result = JSON.parse(checked.stdout);
+    assert.equal(result.summary.errors, 0);
+    assert.equal(result.summary.freshness_status, 'stale');
+    assert.equal(run(['reconcile', '--project', root, '--json']).status, 1);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('CLI check, impact, discovery, and unknown-target exits are stable', () => {
   const common = ['--project', EXAMPLE, '--config', 'subconscious/config.json'];
   const check = run(['check', ...common, '--json']);
@@ -165,6 +402,7 @@ test('unfamiliar projects initialize, persist across processes, and remain isola
       evidence: [{ path: 'src/feature.mjs' }],
     });
     writeGraphAtomic(loadedA.graph, loadedA.graphPath, { root: projectA });
+    reconcileProject(loadProject({ root: projectA }), { acceptCurrentEvidence: true });
 
     const restartCheck = run(['check', '--project', projectA, '--json']);
     assert.equal(restartCheck.status, 0, restartCheck.stderr);
@@ -217,6 +455,30 @@ test('Codex setup preserves existing instructions and is idempotent and removabl
     assert.equal(fs.readFileSync(agents, 'utf8'), original);
   } finally {
     fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test('existing agent guides gain one managed freshness block without losing project-authored content', () => {
+  const testTemporaryRoot = path.join(REPOSITORY, 'test', 'tmp');
+  fs.mkdirSync(testTemporaryRoot, { recursive: true });
+  const root = fs.mkdtempSync(path.join(testTemporaryRoot, 'guide-upgrade-'));
+  try {
+    initializeProject(root);
+    const guide = path.join(root, '.durable-subconscious', 'agent-guide.md');
+    const legacy = '# Durable Subconscious project guide\n\nLegacy lifecycle.\n\n# Project addition\nPreserve me.\n';
+    fs.writeFileSync(guide, legacy);
+    const updated = ensureAgentGuide(root);
+    assert.equal(updated.updated, true);
+    const content = fs.readFileSync(guide, 'utf8');
+    assert.ok(content.startsWith(legacy.trimEnd()));
+    assert.match(content, /Preserve me/);
+    assert.equal(content.split(FRESHNESS_GUIDE_BLOCK_START).length - 1, 1);
+    assert.equal(content.split(FRESHNESS_GUIDE_BLOCK_END).length - 1, 1);
+    const before = content;
+    assert.equal(ensureAgentGuide(root).updated, false);
+    assert.equal(fs.readFileSync(guide, 'utf8'), before);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
@@ -450,6 +712,7 @@ test('shipped runtime is standalone and contains no host-project or machine path
   const runtimeFiles = [
     'src/subconscious-lib.mjs',
     'src/discover.mjs',
+    'src/freshness.mjs',
     'src/initialize.mjs',
     'src/agent-integration.mjs',
     'src/codex-integration.mjs',

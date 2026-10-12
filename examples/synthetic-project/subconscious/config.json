@@ -2,6 +2,7 @@
   "schema_version": 1,
   "project_name": "Synthetic Inventory",
   "graph": "subconscious/graph.json",
+  "freshness": "subconscious/freshness.json",
   "memory_files": [
     "subconscious/maps/overview.md",
     "subconscious/maps/authority.md",

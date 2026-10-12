@@ -14,6 +14,7 @@ The default configuration is `.durable-subconscious/config.json`:
   "project_name": "example-project",
   "agent_guide": ".durable-subconscious/agent-guide.md",
   "graph": ".durable-subconscious/graph.json",
+  "freshness": ".durable-subconscious/freshness.json",
   "memory_files": [
     ".durable-subconscious/maps/overview.md"
   ],
@@ -39,6 +40,11 @@ root, and configured sensitive path segments are rejected.
 Set it to the reviewed capability count before declaring setup complete.
 `required_capability_ids` records the exact reviewed inventory. Do not set
 `capability_coverage_required` to `false` merely to make validation pass.
+
+`freshness` names the project-local reconciled evidence manifest. Optional
+`freshness_rules.source_roots` and `freshness_rules.source_extensions` bound the
+source inventory; otherwise roots are derived from mapped code/test nodes and a
+conservative built-in extension set is used.
 
 ## Nodes
 
@@ -135,11 +141,16 @@ remains.
 
 ## Stale-graph boundary
 
-Validation checks the declared graph; it cannot prove that every semantic
-capability in arbitrary source code was declared. A source change can therefore
-leave a structurally valid but stale graph. A persistent agent integration mitigates
-this by requiring impact retrieval before material edits and knowledge maintenance
-after verified changes. It is a workflow control, not exhaustive program analysis.
+Structural validation checks the declared graph; it cannot prove that every
+semantic capability in arbitrary source code was declared. Freshness verification
+separately compares relevant evidence with the last explicitly reconciled SHA-256
+baseline and bounded source inventory.
+
+`current` means unchanged since reconciliation, not semantically complete.
+`stale` means relevant evidence or inventory changed. `unknown` means no baseline
+exists or evidence could not be conclusively verified. Read-only commands never
+advance the baseline. See [FRESHNESS.md](FRESHNESS.md) for reconciliation,
+historical manifests, race handling, source-inventory scope, and exit codes.
 
 Use `examples/synthetic-project` for a complete synthetic graph with capability,
 journey, persistence, privacy, cache, and executable-test relationships.

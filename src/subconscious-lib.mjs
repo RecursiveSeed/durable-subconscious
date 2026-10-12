@@ -238,18 +238,28 @@ export function projectImpact(project, inputs, options = {}) {
 
 export function formatImpact(result) {
   const section = (title, values) => `\n${title}\n${values.length ? values.map(v => typeof v === 'string' ? `- ${v}` : `- ${v.id}: ${v.label || v.type}${v.implemented === false ? ' [NOT IMPLEMENTED]' : ''}${v.live_status ? ` [${v.live_status}]` : ''}`).join('\n') : '- none mapped; this is not proof of no dependency'}\n`;
+  const unverified = result.freshness && result.freshness.status !== 'current';
+  const rememberedTitle = title => unverified ? `REMEMBERED ${title} — UNVERIFIED` : title;
+  const direct = result.freshness
+    ? section('VERIFIED CURRENT CONNECTIONS', (result.verified_direct || []).map(e => `${e.from} ${e.type} ${e.to} [${e.source}]`))
+      + section('STALE OR UNKNOWN REMEMBERED CONNECTIONS — RECONCILIATION REQUIRED', (result.unverified_direct || []).map(e => `${e.from} ${e.type} ${e.to} [${e.source}; ${e.freshness_status}]`))
+    : section('DIRECT CONNECTIONS', result.direct.map(e => `${e.from} ${e.type} ${e.to} [${e.source}]`));
+  const freshness = result.freshness
+    ? `\nEVIDENCE FRESHNESS\n- status: ${result.freshness.status}\n- baseline: ${result.freshness.baseline}\n- ${result.freshness.disclaimer}${result.freshness.stale?.length ? `\n- stale: ${result.freshness.stale.join(', ')}` : ''}${result.freshness.unknown?.length ? `\n- unknown: ${result.freshness.unknown.join('; ')}` : ''}\n`
+    : '';
   return `DURABLE SUBCONSCIOUS IMPACT — ${result.project_name}\n`
+    + freshness
     + section('LASER TARGET', result.targets)
     + section('UNKNOWN TARGETS — AUDIT REQUIRED', result.unknown)
-    + section('DIRECT CONNECTIONS', result.direct.map(e => `${e.from} ${e.type} ${e.to} [${e.source}]`))
-    + section('RECURSIVE BLAST RADIUS (non-boundary nodes)', result.reached.filter(n => !['capability', 'test', 'journey', 'privacy'].includes(n.type)))
-    + section('AFFECTED AUTHORITIES', result.authorities)
-    + section('AFFECTED CAPABILITIES', result.capabilities)
-    + section('PRIVACY RISKS', result.privacy)
-    + section('STATE/CACHE/INVALIDATION RISKS', result.state_risks)
-    + section('REQUIRED CONTRACT TESTS — SCOPE-LIMITED', result.tests)
-    + section('REQUIRED JOURNEYS', result.journeys)
-    + section('ACTIVE ISSUES', result.issues)
-    + section('RETRIEVAL FRONTIERS — NOT A COMPLETE NEGATIVE PROOF', result.frontiers.map(f => `${f.id}: ${f.reason}`))
-    + section('RELEVANT MEMORY FILES', result.maps);
+    + direct
+    + section(rememberedTitle('RECURSIVE BLAST RADIUS (non-boundary nodes)'), result.reached.filter(n => !['capability', 'test', 'journey', 'privacy'].includes(n.type)))
+    + section(rememberedTitle('AFFECTED AUTHORITIES'), result.authorities)
+    + section(rememberedTitle('AFFECTED CAPABILITIES'), result.capabilities)
+    + section(rememberedTitle('PRIVACY RISKS'), result.privacy)
+    + section(rememberedTitle('STATE/CACHE/INVALIDATION RISKS'), result.state_risks)
+    + section(rememberedTitle('REQUIRED CONTRACT TESTS — SCOPE-LIMITED'), result.tests)
+    + section(rememberedTitle('REQUIRED JOURNEYS'), result.journeys)
+    + section(rememberedTitle('ACTIVE ISSUES'), result.issues)
+    + section(rememberedTitle('RETRIEVAL FRONTIERS — NOT A COMPLETE NEGATIVE PROOF'), result.frontiers.map(f => `${f.id}: ${f.reason}`))
+    + section(rememberedTitle('RELEVANT MEMORY FILES'), result.maps);
 }

@@ -5,6 +5,7 @@ import { initializeProject } from '../src/initialize.mjs';
 import { installAgentIntegration, listAgentCompatibility, removeAgentIntegration, restoreAgentIntegration, setupAgent } from '../src/agent-integration.mjs';
 import { checkGraph, formatImpact, loadProject, projectCheckOptions, projectImpact } from '../src/subconscious-lib.mjs';
 import { discover } from '../src/discover.mjs';
+import { applyFreshnessToImpact, formatFreshness, reconcileProject, verifyImpactFreshness, verifyProjectFreshness } from '../src/freshness.mjs';
 
 function takeOption(args, name) {
   const index = args.indexOf(name);
@@ -16,7 +17,7 @@ function takeOption(args, name) {
 }
 
 function usage() {
-  console.log(`Durable Subconscious\n\nCommands:\n  agents\n  setup [project-root] [--agent auto|codex|claude|cursor|copilot|gemini|opencode] [--name NAME]\n  init [project-root] [--name NAME]\n  integrate <agent> [--project ROOT] [--remove | --restore]\n  check [--project ROOT] [--config PATH] [--json] [--strict-coverage]\n  impact <node-id|file-path>... [--project ROOT] [--config PATH] [--json] [--depth N]\n  discover [--project ROOT] [--config PATH]\n`);
+  console.log(`Durable Subconscious\n\nCommands:\n  agents\n  setup [project-root] [--agent auto|codex|claude|cursor|copilot|gemini|opencode] [--name NAME]\n  init [project-root] [--name NAME]\n  integrate <agent> [--project ROOT] [--remove | --restore]\n  check [--project ROOT] [--config PATH] [--json] [--strict-coverage]\n  impact <node-id|file-path>... [--project ROOT] [--config PATH] [--json] [--depth N]\n  discover [--project ROOT] [--config PATH]\n  reconcile [--project ROOT] [--config PATH] --accept-current-evidence [--json]\n`);
 }
 
 const args = process.argv.slice(2);
@@ -58,15 +59,18 @@ try {
       const strict = args.includes('--strict-coverage');
       const unknown = args.filter(value => !['--json', '--strict-coverage'].includes(value));
       if (unknown.length) throw new Error(`Unknown arguments: ${unknown.join(' ')}`);
-      const result = checkGraph(project.graph, projectCheckOptions(project));
+      const structural = checkGraph(project.graph, projectCheckOptions(project));
+      const freshness = verifyProjectFreshness(project);
+      const result = { ...structural, freshness, summary: { ...structural.summary, freshness_status: freshness.status } };
       if (json) console.log(JSON.stringify(result, null, 2));
       else {
         console.log(`Durable Subconscious: ${JSON.stringify(result.summary)}`);
         for (const error of result.errors) console.error(`ERROR ${error.code} ${error.id}: ${error.detail}`);
         for (const gap of result.gaps) console.log(`KNOWN GAP ${gap.code} ${gap.id}: ${gap.reason}`);
+        console.log(`FRESHNESS ${formatFreshness(freshness)}`);
         console.log('Structural validity is not feature completion. --strict-coverage fails on acknowledged gaps.');
       }
-      process.exitCode = result.errors.length || (strict && result.gaps.length) ? 1 : 0;
+      process.exitCode = result.errors.length || (strict && result.gaps.length) ? 1 : freshness.status === 'current' ? 0 : 3;
     } else if (command === 'impact') {
       const json = args.includes('--json');
       const depthValue = takeOption(args, '--depth');
@@ -74,13 +78,22 @@ try {
       const inputs = args.filter(value => value !== '--json');
       if (!inputs.length) throw new Error('impact needs at least one node ID or file path');
       if (!Number.isInteger(maxDepth) || maxDepth < 1 || maxDepth > 32) throw new Error('depth must be 1..32');
-      const result = projectImpact(project, inputs, { maxDepth });
+      const remembered = projectImpact(project, inputs, { maxDepth });
+      const result = applyFreshnessToImpact(remembered, verifyImpactFreshness(project, remembered));
       console.log(json ? JSON.stringify(result, null, 2) : formatImpact(result));
       if (result.unknown.length) process.exitCode = 2;
+      else if (result.freshness.status !== 'current') process.exitCode = 3;
     } else if (command === 'discover') {
       if (args.length) throw new Error(`Unknown arguments: ${args.join(' ')}`);
       const files = project.graph.nodes.filter(node => node.type === 'module' && node.path && node.discovery !== false).map(node => node.path);
       console.log(JSON.stringify(discover(files, { root: project.root, forbiddenPathSegments: project.config.forbidden_path_segments || [] }), null, 2));
+    } else if (command === 'reconcile') {
+      const json = args.includes('--json');
+      const acceptCurrentEvidence = args.includes('--accept-current-evidence');
+      const unknown = args.filter(value => !['--json', '--accept-current-evidence'].includes(value));
+      if (unknown.length) throw new Error(`Unknown arguments: ${unknown.join(' ')}`);
+      const result = reconcileProject(project, { acceptCurrentEvidence });
+      console.log(json ? JSON.stringify(result, null, 2) : `Durable Subconscious reconciliation: ${JSON.stringify(result)}`);
     } else {
       throw new Error(`Unknown command: ${command}`);
     }
