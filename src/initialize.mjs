@@ -38,7 +38,8 @@ Read config.json and the relevant configured maps. Before a material change, run
 impact for the files, node IDs, or capability IDs in scope. Investigate unknown
 targets and disclosed frontiers before editing. After verified changes, update the
 graph and maps, preserve historical evidence and unresolved gaps, then run check,
-the affected project tests, and impact again.
+the affected project tests, and impact again. Do not finish the change until the
+post-change impact query has been executed against the updated knowledge.
 
 Structural success is not proof of complete coverage. The tool cannot discover all
 semantic capabilities automatically; source changes can make an unmaintained graph

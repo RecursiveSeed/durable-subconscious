@@ -5,7 +5,8 @@
 - Node.js 20 or newer
 - A writable project directory
 - npm for the supported project-local installation
-- Codex for the currently verified automatic AI integration
+- One supported coding agent for persistent automatic integration, or no agent for
+  core-only use
 
 The package has no runtime dependencies, build step, native module, service,
 credential, or network call after installation.
@@ -31,42 +32,49 @@ without downloading or falling back to a global package:
 npx --no-install durable-subconscious help
 ```
 
-## Supported Codex setup
+## One-prompt agent setup
 
-Give a fresh Codex session the exact setup prompt published in `README.md`. That
-session runs:
+Give a fresh supported agent session the exact setup prompt published in
+`README.md`. That session identifies itself and runs, for example:
 
 ```sh
 npx --no-install durable-subconscious setup . --agent codex
 ```
 
+Accepted identifiers are `codex`, `claude`, `cursor`, `copilot`, `gemini`, and
+`opencode`. An optional `--agent auto` succeeds only when one environment is
+unambiguously detectable; use an explicit identifier for predictable automation.
+
 The command performs two bounded operations:
 
 1. Atomically creates `.durable-subconscious/` when it is absent. Existing project
    knowledge is never reinitialized.
-2. Creates or refreshes one managed Durable Subconscious block in root
-   `AGENTS.md`. Existing content remains outside the block.
+2. Creates or refreshes one managed Durable Subconscious block in the selected
+   agent's documented project instruction file. Existing content remains outside
+   the block.
 
-Repeated setup is idempotent. Only Codex is currently verified; no universal
-AI-agent compatibility is claimed.
+Repeated setup is idempotent. It installs no unrelated agent instruction files.
+The canonical workflow remains `.durable-subconscious/agent-guide.md`; adapters do
+not copy or fork its requirements. See `docs/COMPATIBILITY.md` for the distinction
+between independently verified and documented-but-unverified environments.
 
 ## Removal and recovery
 
 Remove only the managed block:
 
 ```sh
-npx --no-install durable-subconscious integrate codex --project . --remove
+npx --no-install durable-subconscious integrate <agent> --project . --remove
 ```
 
 Restore the exact pre-install instruction file when safe:
 
 ```sh
-npx --no-install durable-subconscious integrate codex --project . --restore
+npx --no-install durable-subconscious integrate <agent> --project . --restore
 ```
 
 Recovery refuses to overwrite later changes outside the managed block. The
 pre-install manifest and backup are stored under
-`.durable-subconscious/integrations/codex/`.
+`.durable-subconscious/integrations/` in the selected adapter directory.
 
 Removing the integration does not delete project knowledge. Removing
 `.durable-subconscious/` itself is a separate project-data decision and is never

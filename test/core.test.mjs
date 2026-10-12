@@ -6,7 +6,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { discover } from '../src/discover.mjs';
-import { initializeProject } from '../src/initialize.mjs';
+import { AGENT_GUIDE, initializeProject } from '../src/initialize.mjs';
+import {
+  detectAgent,
+  installAgentIntegration,
+  listAgentCompatibility,
+  MANAGED_BLOCK_END,
+  MANAGED_BLOCK_START,
+  removeAgentIntegration,
+  restoreAgentIntegration,
+  setupAgent,
+} from '../src/agent-integration.mjs';
 import {
   CODEX_BLOCK_END,
   CODEX_BLOCK_START,
@@ -227,7 +237,7 @@ test('Codex integration preserves later external edits and recovery fails closed
     const afterRemoval = fs.readFileSync(agents, 'utf8');
     assert.ok(afterRemoval.includes('# Existing'));
     assert.ok(afterRemoval.includes('# Later project instruction'));
-    assert.doesNotMatch(afterRemoval, /durable-subconscious:codex/);
+    assert.doesNotMatch(afterRemoval, /durable-subconscious:integration/);
   } finally {
     fs.rmSync(temporary, { recursive: true, force: true });
   }
@@ -244,9 +254,9 @@ test('Codex integration safely resumes after a partial recovery-backup write', (
   fs.writeFileSync(agents, original);
   try {
     initializeProject(project);
-    const integrationDirectory = path.join(project, '.durable-subconscious', 'integrations', 'codex');
+    const integrationDirectory = path.join(project, '.durable-subconscious', 'integrations', 'agents');
     fs.mkdirSync(integrationDirectory, { recursive: true });
-    fs.writeFileSync(path.join(integrationDirectory, 'AGENTS.md.before-integration'), original);
+    fs.writeFileSync(path.join(integrationDirectory, 'instruction.before-integration'), original);
     const installed = installCodexIntegration(project);
     assert.equal(installed.status, 'installed');
     assert.ok(fs.existsSync(path.join(integrationDirectory, 'manifest.json')));
@@ -296,11 +306,152 @@ test('Codex setup and removal work through the project-local CLI contract', () =
   }
 });
 
+test('all documented agent adapters preserve instructions, reinstall idempotently, and recover', () => {
+  const cases = [
+    ['codex', 'AGENTS.md'],
+    ['claude', 'CLAUDE.md'],
+    ['cursor', 'AGENTS.md'],
+    ['copilot', '.github/copilot-instructions.md'],
+    ['gemini', 'GEMINI.md'],
+    ['opencode', 'AGENTS.md'],
+  ];
+  const testTemporaryRoot = path.join(REPOSITORY, 'test', 'tmp');
+  fs.mkdirSync(testTemporaryRoot, { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(testTemporaryRoot, 'agent-adapters-'));
+  try {
+    for (const [agent, instructionPath] of cases) {
+      const project = path.join(temporary, agent);
+      const instruction = path.join(project, ...instructionPath.split('/'));
+      fs.mkdirSync(path.dirname(instruction), { recursive: true });
+      const original = `# Existing ${agent} instructions\n`;
+      fs.writeFileSync(instruction, original);
+      const first = setupAgent(project, agent, { projectName: `${agent} fixture` });
+      assert.equal(first.integration.agent, agent);
+      assert.equal(first.integration.status, 'installed');
+      const installed = fs.readFileSync(instruction, 'utf8');
+      assert.ok(installed.startsWith(original), agent);
+      assert.equal(installed.split(MANAGED_BLOCK_START).length - 1, 1, agent);
+      assert.equal(installed.split(MANAGED_BLOCK_END).length - 1, 1, agent);
+      assert.match(installed, /\.durable-subconscious\/agent-guide\.md/, agent);
+      assert.doesNotMatch(installed, /strict-coverage|impact <file/, agent);
+      assert.equal(installAgentIntegration(project, agent).status, 'unchanged', agent);
+      assert.equal(removeAgentIntegration(project, agent).status, 'removed', agent);
+      assert.equal(fs.readFileSync(instruction, 'utf8'), original, agent);
+      installAgentIntegration(project, agent);
+      assert.equal(restoreAgentIntegration(project, agent).status, 'restored', agent);
+      assert.equal(fs.readFileSync(instruction, 'utf8'), original, agent);
+    }
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test('agents sharing AGENTS.md use one canonical managed block', () => {
+  const testTemporaryRoot = path.join(REPOSITORY, 'test', 'tmp');
+  fs.mkdirSync(testTemporaryRoot, { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(testTemporaryRoot, 'shared-agents-'));
+  try {
+    setupAgent(temporary, 'codex');
+    const before = fs.readFileSync(path.join(temporary, 'AGENTS.md'), 'utf8');
+    const cursor = installAgentIntegration(temporary, 'cursor');
+    const opencode = installAgentIntegration(temporary, 'opencode');
+    const after = fs.readFileSync(path.join(temporary, 'AGENTS.md'), 'utf8');
+    assert.equal(cursor.status, 'unchanged');
+    assert.equal(opencode.status, 'unchanged');
+    assert.equal(after, before);
+    assert.equal(after.split(MANAGED_BLOCK_START).length - 1, 1);
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test('v0.2 Codex blocks migrate without losing existing project instructions', () => {
+  const testTemporaryRoot = path.join(REPOSITORY, 'test', 'tmp');
+  fs.mkdirSync(testTemporaryRoot, { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(testTemporaryRoot, 'legacy-codex-'));
+  const original = '# Existing\n';
+  try {
+    initializeProject(temporary);
+    fs.writeFileSync(path.join(temporary, 'AGENTS.md'), `${original}\n<!-- durable-subconscious:codex:start -->\nlegacy body\n<!-- durable-subconscious:codex:end -->\n`);
+    const result = installAgentIntegration(temporary, 'codex');
+    assert.equal(result.status, 'updated');
+    const migrated = fs.readFileSync(path.join(temporary, 'AGENTS.md'), 'utf8');
+    assert.ok(migrated.startsWith(original));
+    assert.doesNotMatch(migrated, /durable-subconscious:codex/);
+    assert.equal(migrated.split(MANAGED_BLOCK_START).length - 1, 1);
+    removeAgentIntegration(temporary, 'codex');
+    assert.equal(fs.readFileSync(path.join(temporary, 'AGENTS.md'), 'utf8'), original);
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test('v0.2 Codex migration preserves whether AGENTS.md originally existed', () => {
+  const testTemporaryRoot = path.join(REPOSITORY, 'test', 'tmp');
+  fs.mkdirSync(testTemporaryRoot, { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(testTemporaryRoot, 'legacy-codex-absence-'));
+  try {
+    initializeProject(temporary);
+    const instruction = path.join(temporary, 'AGENTS.md');
+    fs.writeFileSync(instruction, '<!-- durable-subconscious:codex:start -->\nlegacy body\n<!-- durable-subconscious:codex:end -->\n');
+    const legacyDirectory = path.join(temporary, '.durable-subconscious', 'integrations', 'codex');
+    fs.mkdirSync(legacyDirectory, { recursive: true });
+    fs.writeFileSync(path.join(legacyDirectory, 'manifest.json'), `${JSON.stringify({
+      schema_version: 1,
+      integration: 'codex',
+      agents_path: 'AGENTS.md',
+      original_existed: false,
+      original_sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    }, null, 2)}\n`);
+    installAgentIntegration(temporary, 'codex');
+    removeAgentIntegration(temporary, 'codex');
+    assert.equal(fs.existsSync(instruction), false);
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test('agent auto-detection is bounded and compatibility reporting is explicit', () => {
+  assert.equal(detectAgent({ CODEX_SESSION_ID: 'one' }), 'codex');
+  assert.equal(detectAgent({ CLAUDECODE: '1' }), 'claude');
+  assert.equal(detectAgent({ CODEX_SESSION_ID: 'one', GEMINI_CLI: '1' }), null);
+  assert.equal(detectAgent({}), null);
+  const matrix = listAgentCompatibility();
+  assert.deepEqual(matrix.map(entry => entry.id), ['codex', 'claude', 'cursor', 'copilot', 'gemini', 'opencode']);
+  assert.equal(matrix.find(entry => entry.id === 'codex').independently_verified, true);
+  assert.ok(matrix.filter(entry => entry.id !== 'codex').every(entry => entry.independently_verified === false));
+});
+
+test('ambiguous auto-detection fails before creating project state', () => {
+  const testTemporaryRoot = path.join(REPOSITORY, 'test', 'tmp');
+  fs.mkdirSync(testTemporaryRoot, { recursive: true });
+  const temporary = fs.mkdtempSync(path.join(testTemporaryRoot, 'ambiguous-agent-'));
+  try {
+    assert.throws(
+      () => setupAgent(temporary, 'auto', { env: { CODEX_SESSION_ID: 'one', GEMINI_CLI: 'one' } }),
+      /Unable to identify one AI environment/,
+    );
+    assert.equal(fs.existsSync(path.join(temporary, '.durable-subconscious')), false);
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test('CLI exposes every supported adapter and rejects unknown environments', () => {
+  const listed = run(['agents']);
+  assert.equal(listed.status, 0, listed.stderr);
+  assert.equal(JSON.parse(listed.stdout).length, 6);
+  const unsupported = run(['setup', '.', '--agent', 'unknown-agent']);
+  assert.equal(unsupported.status, 1);
+  assert.match(unsupported.stderr, /Unsupported AI environment/);
+});
+
 test('shipped runtime is standalone and contains no host-project or machine path dependency', () => {
   const runtimeFiles = [
     'src/subconscious-lib.mjs',
     'src/discover.mjs',
     'src/initialize.mjs',
+    'src/agent-integration.mjs',
     'src/codex-integration.mjs',
     'bin/durable-subconscious.mjs',
   ];
@@ -311,6 +462,10 @@ test('shipped runtime is standalone and contains no host-project or machine path
       assert.ok(match[1].startsWith('node:') || match[1].startsWith('.'), `${relative}: ${match[1]}`);
     }
   }
+});
+
+test('canonical agent guide requires a post-change impact query before completion', () => {
+  assert.match(AGENT_GUIDE, /Do not finish the change until the\s+post-change impact query has been executed/);
 });
 
 test('package metadata declares AGPL-3.0-only and no dependencies', () => {

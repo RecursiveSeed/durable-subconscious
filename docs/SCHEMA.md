@@ -137,7 +137,7 @@ remains.
 
 Validation checks the declared graph; it cannot prove that every semantic
 capability in arbitrary source code was declared. A source change can therefore
-leave a structurally valid but stale graph. Supported Codex integration mitigates
+leave a structurally valid but stale graph. A persistent agent integration mitigates
 this by requiring impact retrieval before material edits and knowledge maintenance
 after verified changes. It is a workflow control, not exhaustive program analysis.
 
@@ -155,5 +155,7 @@ architecture or security information.
 - Back it up with the same access controls as the source project.
 - Never put credentials, raw private data, production databases, or unrestricted
   local paths in graph or map evidence.
-- The Codex integration stores its recovery manifest and any pre-install
-  `AGENTS.md` backup under `.durable-subconscious/integrations/codex/`.
+- Agent integrations store recovery manifests and any pre-install instruction
+  backups under `.durable-subconscious/integrations/`. Codex, Cursor, and OpenCode
+  share the `agents` adapter directory because they share one root `AGENTS.md`
+  managed block.

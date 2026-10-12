@@ -12,7 +12,9 @@ The system is deliberately not a source of product truth. Project code and accep
 - Read-only lexical discovery of literal JavaScript imports and `/api/` strings from explicitly mapped module files. Discovery never evaluates project code.
 - Project-local configuration, graph, and prose maps that survive process and machine restarts when the project directory is preserved.
 - Isolation by project root: paths outside the selected root, absolute evidence paths, traversal, and configured sensitive path segments are rejected.
-- Opt-in Codex integration through a preserved, managed block in the project's root `AGENTS.md`.
+- Opt-in integrations for Codex, Claude Code, Cursor, GitHub Copilot, Gemini CLI,
+  and OpenCode. Each adapter points its environment's persistent project
+  instructions to one canonical, agent-independent lifecycle guide.
 - No runtime packages or external services. The implementation uses Node.js built-ins only.
 
 ## Architecture
@@ -61,20 +63,25 @@ npm install --save-dev github:RecursiveSeed/durable-subconscious
 This provides `npx --no-install durable-subconscious` without relying on a separate
 clone or machine-global command. There are no runtime dependencies.
 
-## Exact Codex setup prompt
+## One-prompt setup
 
-Start a fresh Codex session in the project and give it exactly this one prompt:
+Start a fresh session in one of the supported AI coding environments and give it
+this one prompt:
 
 ```text
-Set up the installed Durable Subconscious for this project. Run `npx --no-install durable-subconscious setup . --agent codex`, then read `.durable-subconscious/agent-guide.md` and follow its First mapping section completely. Inspect the actual project source, tests, configuration, and accepted architecture documents; populate an evidence-backed graph and maps; keep uncertainty as typed gaps; do not disable validation rules; run the project tests; and finish by running `npx --no-install durable-subconscious check --project . --strict-coverage` plus representative impact queries. Preserve every pre-existing project instruction and report any unresolved gaps or integration failures.
+Set up the installed Durable Subconscious for this project. Identify which supported coding agent you are—codex, claude, cursor, copilot, gemini, or opencode—then run `npx --no-install durable-subconscious setup . --agent <agent>`, substituting that identifier. Read `.durable-subconscious/agent-guide.md` and follow its First mapping section completely. Inspect the actual project source, tests, configuration, and accepted architecture documents; populate an evidence-backed graph and maps; keep uncertainty as typed gaps; do not disable validation rules; run the project tests; and finish by running `npx --no-install durable-subconscious check --project . --strict-coverage` plus representative impact queries. Preserve every pre-existing project instruction and report any unresolved gaps or integration failures.
 ```
 
-The setup command initializes `.durable-subconscious/` and installs an identifiable
-managed block into the root `AGENTS.md`. Existing instructions are preserved. The
-first session reads the generated guide explicitly because its process began before
-the new `AGENTS.md` existed. Subsequent Codex sessions load the root instructions
-normally and therefore consult and maintain the knowledge without repeating the
-setup prompt.
+The explicit identifier is the dependable path. `--agent auto` is also available
+when exactly one supported environment marker is present; it fails rather than
+guessing when detection is absent or ambiguous.
+
+Setup initializes `.durable-subconscious/` and installs one identifiable managed
+block into only the selected environment's instruction file. Existing instructions
+are preserved. The first session reads the generated guide explicitly because its
+process began before the new instruction existed. Later sessions receive the
+managed instruction through that agent's documented project-instruction mechanism
+and are directed to consult and maintain the same project-local knowledge.
 
 Setup is idempotent. It does not reinitialize or overwrite existing project
 knowledge.
@@ -147,35 +154,63 @@ Paths are resolved against the selected project root. Absolute paths and `..` tr
 See [`docs/SCHEMA.md`](docs/SCHEMA.md) for complete node, edge, capability
 coverage, human-task, golden-journey, and typed-gap formats. Installation does not
 require the developer to author these structures manually; the setup prompt directs
-Codex to populate them from project evidence.
+the selected coding agent to populate them from project evidence.
 
-## Codex integration lifecycle
+## Agent compatibility
 
-Codex is the only verified automatic agent integration in this release. The core
-graph, validator, impact query, discovery, and storage remain agent-independent.
+The core graph, validator, impact query, discovery, storage, and canonical
+`.durable-subconscious/agent-guide.md` are agent-independent. Adapters only connect
+that guide to the selected environment's documented persistent project
+instructions.
+
+| Environment | Installed instruction | Status in v0.3.0 |
+| --- | --- | --- |
+| OpenAI Codex | `AGENTS.md` | Independently verified end to end |
+| Claude Code | `CLAUDE.md` | Documented mechanism; adapter tested; agent session unverified |
+| Cursor | `AGENTS.md` | Documented mechanism; adapter tested; agent session unverified |
+| GitHub Copilot | `.github/copilot-instructions.md` | Documented mechanism; adapter tested; agent session unverified |
+| Gemini CLI | `GEMINI.md` | Documented mechanism; adapter tested; agent session unverified |
+| OpenCode | `AGENTS.md` | Documented mechanism; adapter tested; agent session unverified |
+
+“Adapter tested” means installation, preservation, repeat installation, removal,
+and recovery were executed against synthetic projects. It is not a claim that an
+independent session from that agent followed the lifecycle. See
+[`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) for official mechanism links,
+scope, caveats, and the remaining verification requirements.
+
+Inspect the machine-readable compatibility report:
+
+```sh
+npx --no-install durable-subconscious agents
+```
+
+## Agent integration lifecycle
 
 Install or refresh only the managed block:
 
 ```sh
-npx --no-install durable-subconscious integrate codex --project .
+npx --no-install durable-subconscious integrate <agent> --project .
 ```
 
-Remove the managed block while preserving other `AGENTS.md` content:
+Remove the managed block while preserving all other instruction content:
 
 ```sh
-npx --no-install durable-subconscious integrate codex --project . --remove
+npx --no-install durable-subconscious integrate <agent> --project . --remove
 ```
 
-Restore the exact pre-install `AGENTS.md` when it has not subsequently been edited:
+Restore the exact pre-install instruction file when it has not subsequently been
+edited:
 
 ```sh
-npx --no-install durable-subconscious integrate codex --project . --restore
+npx --no-install durable-subconscious integrate <agent> --project . --restore
 ```
 
 The integration records a recovery manifest and, when applicable, an exact backup
-under `.durable-subconscious/integrations/codex/`. Malformed or duplicate managed
-markers cause a fail-closed error. Recovery refuses to overwrite later project
-instruction changes.
+under `.durable-subconscious/integrations/`. Codex, Cursor, and OpenCode deliberately
+share the single `AGENTS.md` adapter and managed block; selecting one does not
+install the other environments' files. Malformed or duplicate managed markers
+cause a fail-closed error. Recovery refuses to overwrite later project instruction
+changes.
 
 ## Maintaining knowledge
 
@@ -217,7 +252,9 @@ The package has no install dependencies. `npm install` is not required to run th
 - Lexical discovery is partial static evidence. Comments, dynamic imports, computed routes, and runtime data flow require review.
 - A graph is durable memory, not exhaustive program analysis.
 - Impact results are conservative regression candidates, not a claim that every returned component will change.
-- Validation cannot detect every capability missing from the declared graph. The verified Codex workflow is the stale-graph control; other agents require their own persistent instruction integration.
+- Validation cannot detect every capability missing from the declared graph. A
+  persistent adapter instructs an agent to maintain the graph, but only an actual
+  independent agent-session test verifies that behavior end to end.
 - The system does not call models, providers, browsers, or project runtimes.
 
 ## Contributing and security

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import path from 'node:path';
 import { initializeProject } from '../src/initialize.mjs';
-import { installCodexIntegration, removeCodexIntegration, restoreCodexIntegration, setupCodex } from '../src/codex-integration.mjs';
+import { installAgentIntegration, listAgentCompatibility, removeAgentIntegration, restoreAgentIntegration, setupAgent } from '../src/agent-integration.mjs';
 import { checkGraph, formatImpact, loadProject, projectCheckOptions, projectImpact } from '../src/subconscious-lib.mjs';
 import { discover } from '../src/discover.mjs';
 
@@ -16,7 +16,7 @@ function takeOption(args, name) {
 }
 
 function usage() {
-  console.log(`Durable Subconscious\n\nCommands:\n  setup [project-root] --agent codex [--name NAME]\n  init [project-root] [--name NAME]\n  integrate codex [--project ROOT] [--remove | --restore]\n  check [--project ROOT] [--config PATH] [--json] [--strict-coverage]\n  impact <node-id|file-path>... [--project ROOT] [--config PATH] [--json] [--depth N]\n  discover [--project ROOT] [--config PATH]\n`);
+  console.log(`Durable Subconscious\n\nCommands:\n  agents\n  setup [project-root] [--agent auto|codex|claude|cursor|copilot|gemini|opencode] [--name NAME]\n  init [project-root] [--name NAME]\n  integrate <agent> [--project ROOT] [--remove | --restore]\n  check [--project ROOT] [--config PATH] [--json] [--strict-coverage]\n  impact <node-id|file-path>... [--project ROOT] [--config PATH] [--json] [--depth N]\n  discover [--project ROOT] [--config PATH]\n`);
 }
 
 const args = process.argv.slice(2);
@@ -24,13 +24,15 @@ const command = args.shift();
 try {
   if (!command || ['help', '--help', '-h'].includes(command)) {
     usage();
+  } else if (command === 'agents') {
+    if (args.length) throw new Error(`Unknown arguments: ${args.join(' ')}`);
+    console.log(JSON.stringify(listAgentCompatibility(), null, 2));
   } else if (command === 'setup') {
-    const agent = takeOption(args, '--agent');
+    const agent = takeOption(args, '--agent') || 'auto';
     const name = takeOption(args, '--name');
     const root = path.resolve(args.shift() || process.cwd());
     if (args.length) throw new Error(`Unknown arguments: ${args.join(' ')}`);
-    if (agent !== 'codex') throw new Error('setup currently requires --agent codex; other agents are not yet verified');
-    console.log(JSON.stringify(setupCodex(root, { projectName: name || path.basename(root) }), null, 2));
+    console.log(JSON.stringify(setupAgent(root, agent, { projectName: name || path.basename(root) }), null, 2));
   } else if (command === 'init') {
     const name = takeOption(args, '--name');
     const root = path.resolve(args.shift() || process.cwd());
@@ -43,9 +45,9 @@ try {
     const restore = args.includes('--restore');
     const unknown = args.filter(value => !['--remove', '--restore'].includes(value));
     if (unknown.length) throw new Error(`Unknown arguments: ${unknown.join(' ')}`);
-    if (agent !== 'codex') throw new Error('Only the codex integration is currently supported');
+    if (!agent) throw new Error('integrate needs an agent name');
     if (remove && restore) throw new Error('Choose either --remove or --restore');
-    const result = restore ? restoreCodexIntegration(projectRoot) : remove ? removeCodexIntegration(projectRoot) : installCodexIntegration(projectRoot);
+    const result = restore ? restoreAgentIntegration(projectRoot, agent) : remove ? removeAgentIntegration(projectRoot, agent) : installAgentIntegration(projectRoot, agent);
     console.log(JSON.stringify(result, null, 2));
   } else {
     const projectRoot = path.resolve(takeOption(args, '--project') || process.cwd());
