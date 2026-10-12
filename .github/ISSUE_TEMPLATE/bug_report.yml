@@ -1,0 +1,60 @@
+name: Bug report
+description: Report a reproducible Durable Subconscious failure.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, private graphs, proprietary source, personal data, or undisclosed security details. Use the Security tab for vulnerabilities.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.3.0 or a commit SHA
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Runtime and operating system
+      placeholder: Node.js 22 on Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the failure and its impact.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide exact sanitized commands, fixture details, and steps.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Include relevant exit codes, validation output, and test results. Distinguish executed results from historical reports.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safeguards
+    attributes:
+      label: Safeguards
+      options:
+        - label: I searched existing issues for this failure.
+          required: true
+        - label: I removed secrets, private project knowledge, personal data, and machine-specific paths.
+          required: true

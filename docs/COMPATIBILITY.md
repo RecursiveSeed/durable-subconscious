@@ -49,7 +49,9 @@ Official references:
 Documentation establishes only the instruction-loading surface. It does not prove
 that an agent will perform the full pre-change, post-change, validation, and
 persistence lifecycle reliably. That stronger claim requires the independent test
-listed above.
+listed above. Contributors can run the shared
+[independent integration test](INTEGRATION_TESTING.md) and report PASS, PARTIAL,
+or FAIL evidence through the repository issue form.
 
 ## Adapter selection and precedence
 

@@ -1,7 +1,7 @@
 {
   "name": "durable-subconscious",
   "version": "0.3.0",
-  "description": "Local, durable architectural memory and dependency-impact tooling for software projects",
+  "description": "Local, persistent architectural memory and dependency-impact analysis for AI coding agents",
   "type": "module",
   "license": "AGPL-3.0-only",
   "engines": {

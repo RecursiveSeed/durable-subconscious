@@ -1,0 +1,86 @@
+name: Independent integration test
+description: Report a complete agent-session acceptance run.
+title: "[Integration test]: <agent> on <platform>"
+labels:
+  - integration-test
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Follow docs/INTEGRATION_TESTING.md completely. An installed adapter alone is not proof of agent behavior. Sanitize all evidence before submitting.
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent
+      options:
+        - Claude Code
+        - Cursor
+        - GitHub Copilot
+        - Gemini CLI
+        - OpenCode
+    validations:
+      required: true
+  - type: input
+    id: agent_version
+    attributes:
+      label: Agent version and interface
+      placeholder: Exact version and CLI, editor, or coding-agent surface
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: OS, Node.js version, and shell
+    validations:
+      required: true
+  - type: textarea
+    id: project
+    attributes:
+      label: Clean test project
+      description: Describe the synthetic or public project without sharing private data.
+    validations:
+      required: true
+  - type: checkboxes
+    id: acceptance
+    attributes:
+      label: Acceptance results
+      description: Check only steps actually observed in the agent sessions.
+      options:
+        - label: Project-local installation succeeded.
+        - label: The first fresh session initialized and mapped project knowledge from evidence.
+        - label: A later fresh session consulted the persisted knowledge without being reminded.
+        - label: The later session ran a pre-change impact query before editing.
+        - label: The later session updated knowledge after the change.
+        - label: The later session ran project validation, relevant tests, and a post-change impact query.
+        - label: Existing project instructions and unrelated project data were preserved.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized executed evidence
+      description: Include commands, outputs, before/after graph summaries, session boundaries, and failures. Do not substitute documentation claims for observations.
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Overall result
+      options:
+        - PASS
+        - PARTIAL
+        - FAIL
+    validations:
+      required: true
+  - type: textarea
+    id: gaps
+    attributes:
+      label: Failures, unexpected manual steps, and remaining gaps
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I removed credentials, private project knowledge, personal data, proprietary source, and machine-specific paths.
+          required: true

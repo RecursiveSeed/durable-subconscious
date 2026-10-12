@@ -1,0 +1,43 @@
+name: Feature request
+description: Propose a bounded improvement without assuming an engine redesign.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What developer problem is not solved by the current behavior?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and use case
+      description: Describe a synthetic or public example without private project data.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Proposed scope
+      description: State the smallest useful outcome and what should remain unchanged.
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility and risks
+      description: Note effects on graph semantics, validation, privacy, persistence, agent adapters, or existing instruction files.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Contribution terms
+      options:
+        - label: I understand that an accepted implementation is contributed under AGPL-3.0-only unless a separate written agreement exists.
+          required: true

@@ -1,6 +1,10 @@
 # Durable Subconscious
 
-Durable Subconscious is a local, file-backed architectural memory for software projects. It records systems, owners, state, persistence, caches, workers, privacy boundaries, capabilities, tests, issues, and the evidence-backed relationships between them. Its impact query starts from a file or typed node and retrieves the connected owners, consumers, risks, tests, journeys, and unresolved frontiers that should be inspected before a change.
+Durable Subconscious gives AI coding agents durable, project-local architectural
+memory across sessions. It records evidence-backed ownership, dependencies,
+lifecycle, persistence, risks, and tests, then retrieves the relevant impact
+context before and after a change. The core is a local Node.js tool with no runtime
+packages, cloud service, or model-provider dependency.
 
 The system is deliberately not a source of product truth. Project code and accepted project documents remain authoritative. The graph remembers proven relationships and makes uncertainty visible; it does not infer permission or turn a structural check into functional acceptance.
 
@@ -11,6 +15,19 @@ The system is deliberately not a source of product truth. Project code and accep
 > This release does not claim universal compatibility or guarantee automatic
 > lifecycle behavior across AI systems. See [release notes](RELEASE_NOTES.md) and
 > [the compatibility evidence](docs/COMPATIBILITY.md).
+
+## Quick start
+
+Install it as a development dependency in the project the agent should learn:
+
+```sh
+npm install --save-dev github:RecursiveSeed/durable-subconscious
+```
+
+Then start a fresh coding-agent session and paste the
+[one-prompt setup](#one-prompt-setup). The prompt directs the agent to initialize
+project-local knowledge, map the project from evidence, validate it, and install
+only its own persistent instruction adapter. No database or account is required.
 
 ## Capabilities
 
@@ -197,6 +214,15 @@ Inspect the machine-readable compatibility report:
 npx --no-install durable-subconscious agents
 ```
 
+### Help verify another agent
+
+Independent reports for Claude Code, Cursor, GitHub Copilot, Gemini CLI, and
+OpenCode are welcome. Follow the single
+[three-session acceptance protocol](docs/INTEGRATION_TESTING.md), then open an
+**Independent integration test** issue with sanitized PASS, PARTIAL, or FAIL
+evidence. Failures and unexpected manual steps are useful results; installing an
+adapter alone is not a compatibility pass.
+
 ## Agent integration lifecycle
 
 Install or refresh only the managed block:
@@ -272,7 +298,10 @@ The package has no install dependencies. `npm install` is not required to run th
 
 ## Contributing and security
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for changes and [SECURITY.md](SECURITY.md) for private vulnerability reporting guidance.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for changes and pull requests,
+[the independent integration test](docs/INTEGRATION_TESTING.md) for reporting an
+agent-session result, and [SECURITY.md](SECURITY.md) for private vulnerability
+reporting guidance.
 
 ## License
 
