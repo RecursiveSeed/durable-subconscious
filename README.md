@@ -9,7 +9,7 @@ cloud service, or model-provider dependency.
 
 The system is deliberately not a source of product truth. Project code and accepted project documents remain authoritative. The graph remembers proven relationships and makes uncertainty visible; it does not infer permission or turn a structural check into functional acceptance.
 
-> **Release status:** v0.5.0 is a **Public Beta Candidate pending publication approval**. The Codex
+> **Release status:** v0.5.0 is the current **Public Beta** release. The Codex
 > integration is independently verified end to end. Claude Code, Cursor, GitHub
 > Copilot, Gemini CLI, and OpenCode have documented instruction mechanisms and
 > tested adapters, but have not been verified in independent agent sessions.
@@ -249,9 +249,11 @@ instructions.
 
 This matrix is deliberately not a universal-compatibility claim. Automatic
 consultation and maintenance depend on the selected external agent loading and
-following its project instructions; only the Codex path has been independently
-observed doing so across fresh sessions. That v0.4.0 evidence is retained for
-v0.5.0; no new independent session claim is added.
+following its project instructions. Only the Codex path has been independently
+observed doing so across fresh sessions. The retained v0.4.0 lifecycle evidence
+is supplemented in v0.5.0 by fresh-session conceptual retrieval, a v0.4 bootstrap
+upgrade that preserved project knowledge and custom instructions, and automatic
+post-upgrade retrieval in another fresh session.
 
 | Environment | Installed instruction | Status in v0.5.0 |
 | --- | --- | --- |

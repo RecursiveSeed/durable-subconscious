@@ -1,8 +1,8 @@
 # Release notes
 
-## v0.5.0 — Synapse-to-Storage Retrieval and Durable Updates
+## v0.5.0 — Synapse-to-Storage Retrieval and Durable Updates (2026-10-14)
 
-This public-beta candidate retains the v0.4 graph, typed impact traversal,
+This public-beta release retains the v0.4 graph, typed impact traversal,
 evidence authority, freshness verification, reconciliation boundary, project
 storage, and six agent adapters. It adds two bounded facilities around that core.
 
@@ -40,7 +40,7 @@ remain adapter-tested but actual-agent-session **UNVERIFIED**.
   command is for failed or interrupted transactions, not deliberate downgrades.
 - Package updates and current fingerprints do not prove semantic correctness.
 
-### Executed v0.5.0 candidate checks
+### Executed v0.5.0 release checks
 
 - 41 of 41 canonical core, retrieval, upgrade, adapter, and packaged-example tests
   passed.
@@ -156,7 +156,7 @@ official mechanism references, exact instruction paths, and remaining tests.
 - The release package contained only the intended distribution files and no
   bundled dependencies.
 - The dependency audit reported zero known vulnerabilities.
-- Distribution scans found no Whispering Woods private data, credentials, private
+- Distribution scans found no private project data, credentials, private
   keys, access tokens, or machine-specific paths.
 
 These checks establish the tested release surface; they do not substitute for the

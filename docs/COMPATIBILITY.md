@@ -9,14 +9,17 @@ operating lifecycle.
 
 The core freshness gate and explicit reconciliation command are agent-independent.
 Adapters receive the same instruction to stop on stale or unknown evidence and to
-advance a baseline only after evidence-backed reconciliation. This does not add
-new agent-session verification: only Codex has the independent end-to-end status
-described below; the five other environments remain agent-session **UNVERIFIED**.
+advance a baseline only after evidence-backed reconciliation. Only Codex has the
+independent end-to-end status described below. v0.5.0 acceptance additionally
+exercised conceptual retrieval in a fresh Codex session, a v0.4 bootstrap upgrade
+that preserved project knowledge and custom instructions, and automatic retrieval
+from the upgraded integration in another fresh session. The five other
+environments remain agent-session **UNVERIFIED**.
 
-v0.5.0 is a **Public Beta Candidate pending publication approval**. It is not a claim of universal
-compatibility or guaranteed automatic behavior across AI systems. Codex is the
-only integration independently verified through fresh agent sessions for this
-release. The other five integrations are adapter-tested but agent-session
+v0.5.0 is the current **Public Beta** release. It is not a claim of universal
+compatibility or guaranteed automatic behavior across AI systems. Codex remains
+the only integration independently verified through fresh agent sessions. The
+other five integrations are adapter-tested but agent-session
 **UNVERIFIED**.
 
 ## Status definitions
