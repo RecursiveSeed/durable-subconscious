@@ -1,9 +1,9 @@
 # AI environment compatibility
 
-Durable Subconscious v0.4.0 keeps its engine, project knowledge, graph schema,
-validation, discovery, impact analysis, and persistence independent of any model
-provider. An adapter only adds a small managed loader to one documented project
-instruction file. Every adapter loads the same project-local
+Durable Subconscious v0.5.0 keeps its engine, project knowledge, graph schema,
+validation, conceptual retrieval, discovery, impact analysis, upgrades, and
+persistence independent of any model provider. An adapter only adds a small
+managed loader to one documented project instruction file. Every adapter loads the same project-local
 `.durable-subconscious/agent-guide.md`; there are no agent-specific forks of the
 operating lifecycle.
 
@@ -13,7 +13,7 @@ advance a baseline only after evidence-backed reconciliation. This does not add
 new agent-session verification: only Codex has the independent end-to-end status
 described below; the five other environments remain agent-session **UNVERIFIED**.
 
-v0.4.0 is designated a **Public Beta**. It is not a claim of universal
+v0.5.0 is a **Public Beta Candidate pending publication approval**. It is not a claim of universal
 compatibility or guaranteed automatic behavior across AI systems. Codex is the
 only integration independently verified through fresh agent sessions for this
 release. The other five integrations are adapter-tested but agent-session
@@ -34,7 +34,7 @@ release. The other five integrations are adapter-tested but agent-session
 
 ## Matrix
 
-| Environment | Official persistent mechanism | Adapter installed by v0.4.0 | Executed status | Remaining independent test |
+| Environment | Official persistent mechanism | Adapter installed by v0.5.0 | Executed status | Remaining independent test |
 | --- | --- | --- | --- | --- |
 | OpenAI Codex | Root-to-leaf `AGENTS.md` instructions are discovered and injected | Root `AGENTS.md` | Independently verified and adapter tested | None for the tested Codex CLI path |
 | Claude Code | Project `CLAUDE.md` is persistent context; imports are supported | Root `CLAUDE.md`, importing the canonical guide | Documented, adapter tested, **UNVERIFIED** in an actual Claude session | Fresh Claude Code setup session and a separate uncued maintenance session |

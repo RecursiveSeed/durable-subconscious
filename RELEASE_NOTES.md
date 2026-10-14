@@ -1,5 +1,64 @@
 # Release notes
 
+## v0.5.0 — Synapse-to-Storage Retrieval and Durable Updates
+
+This public-beta candidate retains the v0.4 graph, typed impact traversal,
+evidence authority, freshness verification, reconciliation boundary, project
+storage, and six agent adapters. It adds two bounded facilities around that core.
+
+`query` derives a compact concept/alias candidate cache from stable graph
+identities, labels, types, paths, and optional aliases. A focused candidate is
+then resolved through the existing impact and freshness engine. Ambiguous queries
+require explicit selection; stale, missing, renamed, or unknown evidence keeps the
+existing exit code `3`; rebuilding the cache never reconciles evidence.
+
+`update` adds plan/apply transactions for supported stable package upgrades. The
+target package is staged and its exact version and declared transition are checked
+before installation files change. A standalone helper performs replacement,
+refreshes only managed instruction sections, verifies unchanged knowledge and
+freshness state, and rolls back bounded package/instruction files on failure.
+Interrupted transactions block later updates until explicit recovery.
+
+v0.3 and v0.4 installations require a documented one-time bootstrap after npm
+installs v0.5, because those older packages do not contain an updater. The
+bootstrap and all later upgrades preserve graph knowledge, maps, evidence history,
+typed gaps, freshness data, configuration, and authored instructions. They never
+silently accept current evidence.
+
+The graph/config/freshness schemas remain version `1`. The package remains
+dependency-free and AGPL-3.0-only. Codex retains its previously independent
+session verification; Claude Code, Cursor, GitHub Copilot, Gemini CLI, and OpenCode
+remain adapter-tested but actual-agent-session **UNVERIFIED**.
+
+### Known limitations
+
+- Concept ranking is lexical. Unrepresented synonyms require a graph alias.
+- Ambiguous concepts require an explicit stable-ID selection.
+- `latest` discovery requires GitHub network access; exact versions and approved
+  local package artifacts remain available.
+- Completed update transactions discard bulky rollback backups. The rollback
+  command is for failed or interrupted transactions, not deliberate downgrades.
+- Package updates and current fingerprints do not prove semantic correctness.
+
+### Executed v0.5.0 candidate checks
+
+- 41 of 41 canonical core, retrieval, upgrade, adapter, and packaged-example tests
+  passed.
+- Fictional v0.3 and v0.4 installations preserved graph identities, typed gaps,
+  maps, freshness state/history, and authored instructions through bootstrap.
+- A fictional v0.5.0 installation upgraded to a locally packed v0.5.1 candidate;
+  repeated application was unchanged; a simulated interrupted v0.5.2 update was
+  recovered explicitly; and an injected post-install failure rolled back without
+  knowledge loss.
+- On a 10,000-node fictional graph, v0.5 conceptual retrieval completed in about
+  60 ms while building the cache and about 45 ms warm, versus v0.4 returning the
+  conceptual input as unknown. The exact-ID v0.4 path remained faster, as intended.
+- The 10,000-node compact index was 737,947 bytes for an 877,879-byte source graph
+  and returned at most five candidates with a depth-one authoritative traversal.
+- The package dry run contained 38 intended files, no bundled dependencies, and
+  no test fixtures or local project knowledge. The dependency advisory audit
+  reported zero known vulnerabilities.
+
 ## v0.4.0 — Evidence Freshness (2026-10-11)
 
 This release adds a compatibility-affecting reliability gate: `check` and

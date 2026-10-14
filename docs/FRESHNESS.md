@@ -29,6 +29,11 @@ are separated from verified-current connections. `impact` exits `3` and requires
 source review before a decision relies on them. Read-only commands never update
 the baseline.
 
+The v0.5 `query` command first selects a graph identity from the derived concept
+index and then runs this same impact/freshness verification. Candidate ranking
+cannot turn stale or unknown evidence into verified knowledge. Rebuilding the
+concept index is not reconciliation.
+
 `check` also exits `3` when freshness is stale or unknown. Structural failures and
 strict-coverage gaps remain a separate exit `1`; freshness cannot convert those
 conditions into a pass.
@@ -124,10 +129,9 @@ corresponding project knowledge.
 ## Upgrading existing project knowledge
 
 Projects created before this freshness gate have no trusted fingerprint baseline.
-After upgrading the package, rerun `integrate <agent> --project .` to add the
-managed freshness requirements to the existing canonical agent guide. Existing
-guide content and agent instruction content are preserved. The missing baseline
-continues to report `unknown` until current source and knowledge have been reviewed
-and reconciliation is explicitly accepted; installation or adapter refresh alone
-never advances trust.
+The v0.5 bootstrap/update workflow refreshes managed requirements while preserving
+guide content and agent instructions. A missing baseline continues to report
+`unknown` until current source and knowledge have been reviewed and reconciliation
+is explicitly accepted; installation or adapter refresh alone never advances
+trust. See [UPGRADING.md](UPGRADING.md) for version-aware transactions and recovery.
 

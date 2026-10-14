@@ -740,6 +740,10 @@ test('shipped runtime is standalone and contains no host-project or machine path
     'src/subconscious-lib.mjs',
     'src/discover.mjs',
     'src/freshness.mjs',
+    'src/concept-index.mjs',
+    'src/update.mjs',
+    'src/update-helper.mjs',
+    'src/version.mjs',
     'src/initialize.mjs',
     'src/agent-integration.mjs',
     'src/codex-integration.mjs',
@@ -761,6 +765,8 @@ test('canonical agent guide requires a post-change impact query before completio
 test('package metadata declares AGPL-3.0-only and no dependencies', () => {
   const packageJson = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'package.json')));
   assert.equal(packageJson.license, 'AGPL-3.0-only');
+  assert.equal(packageJson.version, '0.5.0');
+  assert.ok(packageJson.durableSubconscious.supportedUpgradeFrom.includes('0.4.x'));
   assert.equal(packageJson.dependencies, undefined);
   assert.equal(packageJson.devDependencies, undefined);
   assert.ok(packageJson.files.includes('docs'));

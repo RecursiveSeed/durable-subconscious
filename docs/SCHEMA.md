@@ -15,6 +15,7 @@ The default configuration is `.durable-subconscious/config.json`:
   "agent_guide": ".durable-subconscious/agent-guide.md",
   "graph": ".durable-subconscious/graph.json",
   "freshness": ".durable-subconscious/freshness.json",
+  "concept_index": ".durable-subconscious/concept-index.json",
   "memory_files": [
     ".durable-subconscious/maps/overview.md"
   ],
@@ -46,11 +47,19 @@ Set it to the reviewed capability count before declaring setup complete.
 source inventory; otherwise roots are derived from mapped code/test nodes and a
 conservative built-in extension set is used.
 
+`concept_index` names the optional derived navigation cache. It is rebuilt when
+its graph hash differs from the authoritative graph. Deleting it loses no project
+knowledge. See [CONCEPT_RETRIEVAL.md](CONCEPT_RETRIEVAL.md).
+
 ## Nodes
 
 Every node needs a unique `id`, a controlled `type`, and a useful `label`.
 Project-backed nodes normally include a project-relative `path` and an `owner` node
 ID.
+
+Nodes may also provide an `aliases` array of short, non-empty search terms.
+Aliases improve concept-to-ID navigation; they do not establish relationships or
+serve as evidence.
 
 Controlled node types are:
 
@@ -170,3 +179,8 @@ architecture or security information.
   backups under `.durable-subconscious/integrations/`. Codex, Cursor, and OpenCode
   share the `agents` adapter directory because they share one root `AGENTS.md`
   managed block.
+- `.durable-subconscious/installation.json` records installed-version and schema
+  compatibility state. `.durable-subconscious/update-transactions/` stores bounded
+  recoverable package-update transactions. Neither replaces graph knowledge.
+- `.durable-subconscious/concept-index.json` is a disposable, graph-derived
+  navigation cache, never a freshness or evidence authority.

@@ -104,6 +104,9 @@ export function checkGraph(graph, {
   }
   const links = (id, type) => (graph.edges || []).filter(e => e.from === id && e.type === type);
   for (const n of nodes.values()) {
+    if (n.aliases !== undefined && (!Array.isArray(n.aliases) || n.aliases.some(value => typeof value !== 'string' || !value.trim()))) {
+      fail('ALIASES', n.id, 'Aliases must be a list of non-empty strings');
+    }
     if (n.path) file(n.path, n.id);
     for (const p of n.maps || []) file(p, n.id);
     for (const p of n.evidence || []) file(p, n.id);

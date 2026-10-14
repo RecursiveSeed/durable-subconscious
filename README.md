@@ -2,13 +2,14 @@
 
 Durable Subconscious gives AI coding agents durable, project-local architectural
 memory across sessions. It records evidence-backed ownership, dependencies,
-lifecycle, persistence, risks, and tests, then retrieves the relevant impact
-context before and after a change. The core is a local Node.js tool with no runtime
-packages, cloud service, or model-provider dependency.
+lifecycle, persistence, risks, and tests, then finds relevant knowledge from a
+natural-language concept and verifies it through the authoritative impact and
+freshness engine. The core is a local Node.js tool with no runtime packages,
+cloud service, or model-provider dependency.
 
 The system is deliberately not a source of product truth. Project code and accepted project documents remain authoritative. The graph remembers proven relationships and makes uncertainty visible; it does not infer permission or turn a structural check into functional acceptance.
 
-> **Release status:** v0.4.0 is a **Public Beta**. The Codex
+> **Release status:** v0.5.0 is a **Public Beta Candidate pending publication approval**. The Codex
 > integration is independently verified end to end. Claude Code, Cursor, GitHub
 > Copilot, Gemini CLI, and OpenCode have documented instruction mechanisms and
 > tested adapters, but have not been verified in independent agent sessions.
@@ -34,11 +35,17 @@ only its own persistent instruction adapter. No database or account is required.
 - A typed, evidence-bearing dependency graph stored as JSON-form YAML 1.2.
 - Structural validation for ownership, persistence/hydration, cache invalidation, worker staleness/recovery, privacy boundaries, providers, capabilities, executable regression protection, and explicit gaps.
 - Recursive impact queries with bounded traversal, cycle handling, ownership context, protection leaves, and disclosed depth/co-location frontiers.
+- A graph-hash-keyed conceptual navigation index that maps natural-language terms
+  and optional aliases to focused stable-ID candidates, then delegates to the
+  authoritative impact and freshness engine.
 - Project-local evidence fingerprints and bounded source inventory that distinguish
   current, stale, and unknown memories before impact results are presented as
   verified current knowledge.
 - Read-only lexical discovery of literal JavaScript imports and `/api/` strings from explicitly mapped module files. Discovery never evaluates project code.
 - Project-local configuration, graph, and prose maps that survive process and machine restarts when the project directory is preserved.
+- Version-aware, recoverable project-local upgrades that preserve knowledge,
+  evidence history, configuration, and user-authored agent instructions without
+  confusing package replacement with evidence reconciliation.
 - Isolation by project root: paths outside the selected root, absolute evidence paths, traversal, and configured sensitive path segments are rejected.
 - Opt-in integrations for Codex, Claude Code, Cursor, GitHub Copilot, Gemini CLI,
   and OpenCode. Each adapter points its environment's persistent project
@@ -55,6 +62,8 @@ project source and evidence
           |
           +--> graph.json ----> validate ----> explicit errors and known gaps
           |         |
+          |         +---------> concept index -> focused stable-ID candidates
+          |         |
           |         +---------> freshness gate --> impact owners, consumers, tests, risks
           |         |
           |         +---------> discovery -------> lexical evidence for review
@@ -62,6 +71,7 @@ project source and evidence
           +--> maps/*.md -----> durable prose context and unresolved frontiers
           |
           +--> freshness.json -> reconciled hashes + bounded source inventory
+          +--> installation.json -> installed version + supported update state
 ```
 
 The graph uses three controlled vocabularies:
@@ -118,18 +128,29 @@ knowledge.
 
 ### Upgrading an existing installation
 
-After upgrading from v0.3.x, rerun the selected adapter command once so the
-canonical agent guide receives the managed freshness requirements while preserving
-all existing project-authored instructions:
+v0.3 and v0.4 packages do not contain the updater. Install v0.5 once with npm,
+review a bootstrap plan, and then apply it:
 
 ```sh
-npx --no-install durable-subconscious integrate <agent> --project .
+npm install --save-dev github:RecursiveSeed/durable-subconscious#v0.5.0
+npx --no-install durable-subconscious update --project . --bootstrap-from 0.4.0 --agent <agent>
+npx --no-install durable-subconscious update --project . --bootstrap-from 0.4.0 --agent <agent> --apply
 ```
 
-The first new `check` or `impact` reports freshness as `unknown` until an agent or
-developer reviews the existing knowledge against current source and explicitly
-runs `reconcile --accept-current-evidence`. This migration never accepts the
-current files automatically.
+Future supported releases use `update --to <exact-version>` with a separate plan
+and `--apply` step. Existing graph knowledge, maps, evidence history, freshness,
+configuration, gaps, and project-authored instructions are preserved. Updates do
+not reconcile evidence. See [version-aware upgrades and recovery](docs/UPGRADING.md).
+
+For an installation that already has the v0.5 updater, give a supported agent:
+
+```text
+Update Durable Subconscious to the latest stable version. Preserve all existing knowledge, configurations, and agent instructions. Verify the update and report anything unresolved.
+```
+
+The agent should run `update --to latest` only to identify the stable version,
+review an exact-version plan, then apply that exact version and report freshness
+without reconciling it automatically.
 
 ## Manual initialization
 
@@ -158,6 +179,16 @@ npx --no-install durable-subconscious impact project --project .
 npx --no-install durable-subconscious impact src/server.mjs --project . --json
 ```
 
+When the exact identity is unknown, retrieve a focused, freshness-verified owner
+from a natural-language concept:
+
+```sh
+npx --no-install durable-subconscious query "where is session persistence owned" --project . --depth 1
+```
+
+Ambiguous queries return candidates without inventing a selection. See
+[conceptual retrieval](docs/CONCEPT_RETRIEVAL.md).
+
 Run read-only lexical discovery over module nodes already present in that graph:
 
 ```sh
@@ -176,6 +207,7 @@ The default file is `.durable-subconscious/config.json` inside the target projec
   "project_name": "your-project",
   "graph": ".durable-subconscious/graph.json",
   "freshness": ".durable-subconscious/freshness.json",
+  "concept_index": ".durable-subconscious/concept-index.json",
   "memory_files": [
     ".durable-subconscious/maps/overview.md",
     ".durable-subconscious/maps/authority.md"
@@ -218,9 +250,10 @@ instructions.
 This matrix is deliberately not a universal-compatibility claim. Automatic
 consultation and maintenance depend on the selected external agent loading and
 following its project instructions; only the Codex path has been independently
-observed doing so across fresh sessions in v0.4.0.
+observed doing so across fresh sessions. That v0.4.0 evidence is retained for
+v0.5.0; no new independent session claim is added.
 
-| Environment | Installed instruction | Status in v0.4.0 |
+| Environment | Installed instruction | Status in v0.5.0 |
 | --- | --- | --- |
 | OpenAI Codex | `AGENTS.md` | Independently verified end to end |
 | Claude Code | `CLAUDE.md` | Documented mechanism; adapter tested; agent session unverified |

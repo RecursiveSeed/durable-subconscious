@@ -2,11 +2,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_STATE_DIRECTORY } from './subconscious-lib.mjs';
+import { INSTALLATION_SCHEMA_VERSION, PACKAGE_VERSION, UPDATE_COMPATIBILITY } from './version.mjs';
 
 const MAPS = ['overview', 'authority', 'interfaces', 'lifecycle', 'privacy', 'test-coverage', 'ripples'];
 
 export const FRESHNESS_GUIDE_BLOCK_START = '<!-- durable-subconscious:freshness-guide:start -->';
 export const FRESHNESS_GUIDE_BLOCK_END = '<!-- durable-subconscious:freshness-guide:end -->';
+export const CONCEPT_GUIDE_BLOCK_START = '<!-- durable-subconscious:concept-guide:start -->';
+export const CONCEPT_GUIDE_BLOCK_END = '<!-- durable-subconscious:concept-guide:end -->';
+export const UPDATE_GUIDE_BLOCK_START = '<!-- durable-subconscious:update-guide:start -->';
+export const UPDATE_GUIDE_BLOCK_END = '<!-- durable-subconscious:update-guide:end -->';
 
 const FRESHNESS_GUIDE_BLOCK = `${FRESHNESS_GUIDE_BLOCK_START}
 ## Freshness and reconciliation requirements (managed)
@@ -28,6 +33,30 @@ dependencies, reconcile your subconscious with current source evidence, and repo
 anything that remains uncertain,” inspect actual changes, reconcile only supported
 knowledge, validate, and report both updates and unresolved uncertainty.
 ${FRESHNESS_GUIDE_BLOCK_END}`;
+
+const CONCEPT_GUIDE_BLOCK = `${CONCEPT_GUIDE_BLOCK_START}
+## Conceptual retrieval requirements (managed)
+
+When the exact graph identity or path is unknown, begin with a focused conceptual
+query instead of a broad project audit:
+
+   npx --no-install durable-subconscious query <concept words> --project . --depth 1
+
+The concept index is a derived navigation cache, never evidence authority. If the
+result is ambiguous, inspect the focused candidates and rerun with --select. Rely
+on a relationship only after the returned impact/freshness result verifies it.
+Increase depth deliberately when the disclosed frontier is relevant.
+${CONCEPT_GUIDE_BLOCK_END}`;
+
+const UPDATE_GUIDE_BLOCK = `${UPDATE_GUIDE_BLOCK_START}
+## Software update requirements (managed)
+
+Treat package updates and knowledge reconciliation as separate operations. First
+run the update command without --apply to review its exact plan. Apply only a
+supported stable transition, preserve project knowledge and authored instructions,
+and report freshness or unresolved relationships without accepting new evidence.
+Use INSTALL.md for the one-time v0.3/v0.4 bootstrap and rollback procedure.
+${UPDATE_GUIDE_BLOCK_END}`;
 
 export const AGENT_GUIDE = `# Durable Subconscious project guide
 
@@ -83,6 +112,10 @@ semantic capabilities automatically; source changes can make an unmaintained gra
 stale even while check succeeds.
 
 ${FRESHNESS_GUIDE_BLOCK}
+
+${CONCEPT_GUIDE_BLOCK}
+
+${UPDATE_GUIDE_BLOCK}
 `;
 
 function mapTemplate(title) {
@@ -102,6 +135,7 @@ export function initializeProject(root, { projectName = path.basename(path.resol
     agent_guide: `${DEFAULT_STATE_DIRECTORY}/agent-guide.md`,
     graph: `${DEFAULT_STATE_DIRECTORY}/graph.json`,
     freshness: `${DEFAULT_STATE_DIRECTORY}/freshness.json`,
+    concept_index: `${DEFAULT_STATE_DIRECTORY}/concept-index.json`,
     memory_files: relativeMaps,
     forbidden_path_segments: ['.git', 'node_modules', '.env', 'secrets', 'credentials'],
     graph_rules: {
@@ -135,6 +169,15 @@ export function initializeProject(root, { projectName = path.basename(path.resol
     fs.writeFileSync(path.join(temporary, 'config.json'), JSON.stringify(config, null, 2) + '\n', { flag: 'wx' });
     fs.writeFileSync(path.join(temporary, 'graph.json'), JSON.stringify(graph, null, 2) + '\n', { flag: 'wx' });
     fs.writeFileSync(path.join(temporary, 'agent-guide.md'), AGENT_GUIDE, { flag: 'wx' });
+    fs.writeFileSync(path.join(temporary, 'installation.json'), `${JSON.stringify({
+      schema_version: INSTALLATION_SCHEMA_VERSION,
+      installed_version: PACKAGE_VERSION,
+      state_schema: UPDATE_COMPATIBILITY.state_schema,
+      graph_schema: UPDATE_COMPATIBILITY.graph_schema,
+      freshness_schema: UPDATE_COMPATIBILITY.freshness_schema,
+      package_spec: null,
+      integration_adapters: [],
+    }, null, 2)}\n`, { flag: 'wx' });
     for (const name of MAPS) fs.writeFileSync(path.join(temporary, 'maps', `${name}.md`), mapTemplate(name.split('-').map(word => word[0].toUpperCase() + word.slice(1)).join(' ')), { flag: 'wx' });
     fs.renameSync(temporary, target);
   } catch (error) {
@@ -154,12 +197,17 @@ export function ensureAgentGuide(root) {
     return { path: guide, created: true, updated: false };
   }
   const current = fs.readFileSync(guide, 'utf8');
-  const starts = current.split(FRESHNESS_GUIDE_BLOCK_START).length - 1;
-  const ends = current.split(FRESHNESS_GUIDE_BLOCK_END).length - 1;
-  if (starts !== ends || starts > 1) throw new Error('Agent guide has malformed or duplicate freshness markers; refusing to overwrite it');
-  const next = starts === 0
-    ? `${current.trimEnd()}\n\n${FRESHNESS_GUIDE_BLOCK}\n`
-    : `${current.slice(0, current.indexOf(FRESHNESS_GUIDE_BLOCK_START))}${FRESHNESS_GUIDE_BLOCK}${current.slice(current.indexOf(FRESHNESS_GUIDE_BLOCK_END) + FRESHNESS_GUIDE_BLOCK_END.length)}`;
+  const replaceManaged = (value, start, end, block, label) => {
+    const starts = value.split(start).length - 1;
+    const ends = value.split(end).length - 1;
+    if (starts !== ends || starts > 1) throw new Error(`Agent guide has malformed or duplicate ${label} markers; refusing to overwrite it`);
+    return starts === 0
+      ? `${value.trimEnd()}\n\n${block}\n`
+      : `${value.slice(0, value.indexOf(start))}${block}${value.slice(value.indexOf(end) + end.length)}`;
+  };
+  let next = replaceManaged(current, FRESHNESS_GUIDE_BLOCK_START, FRESHNESS_GUIDE_BLOCK_END, FRESHNESS_GUIDE_BLOCK, 'freshness');
+  next = replaceManaged(next, CONCEPT_GUIDE_BLOCK_START, CONCEPT_GUIDE_BLOCK_END, CONCEPT_GUIDE_BLOCK, 'concept');
+  next = replaceManaged(next, UPDATE_GUIDE_BLOCK_START, UPDATE_GUIDE_BLOCK_END, UPDATE_GUIDE_BLOCK, 'update');
   if (next === current) return { path: guide, created: false, updated: false };
   const temporary = `${guide}.${process.pid}.${Date.now()}.new`;
   fs.writeFileSync(temporary, next, { encoding: 'utf8', flag: 'wx' });

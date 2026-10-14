@@ -58,20 +58,38 @@ The canonical workflow remains `.durable-subconscious/agent-guide.md`; adapters 
 not copy or fork its requirements. See `docs/COMPATIBILITY.md` for the distinction
 between independently verified and documented-but-unverified environments.
 
-## Upgrade from v0.3.x
+## Upgrade from v0.3 or v0.4
 
-After installing the new package version, refresh the already selected adapter:
+Those packages predate the updater, so first install v0.5 with the existing npm
+method:
 
 ```sh
-npx --no-install durable-subconscious integrate <agent> --project .
+npm install --save-dev github:RecursiveSeed/durable-subconscious#v0.5.0
 ```
 
-This adds or refreshes one managed freshness section in the canonical agent guide
-without replacing project-authored instructions. A pre-existing project initially
-has no reconciled fingerprint baseline, so `check` and `impact` safely report
-`unknown`. Review the existing graph and maps against current source before using
-the explicit `reconcile --accept-current-evidence` command below. Upgrade never
-silently marks existing evidence current.
+Then review and apply the one-time bootstrap, substituting the actual prior
+version and selected agent:
+
+```sh
+npx --no-install durable-subconscious update --project . --bootstrap-from 0.4.0 --agent codex
+npx --no-install durable-subconscious update --project . --bootstrap-from 0.4.0 --agent codex --apply
+```
+
+The bootstrap preserves knowledge and custom instructions, refreshes managed
+requirements, and records the installed version. It does not reconcile evidence;
+missing freshness remains unknown and stale evidence remains stale.
+
+For later supported releases, discover the latest stable version, then plan and
+apply that exact version:
+
+```sh
+npx --no-install durable-subconscious update --project . --to latest
+npx --no-install durable-subconscious update --project . --to 0.5.1
+npx --no-install durable-subconscious update --project . --to 0.5.1 --apply
+```
+
+See [`docs/UPGRADING.md`](docs/UPGRADING.md) for compatibility checks,
+transactions, interrupted-update recovery, local package sources, and rollback.
 
 ## Removal and recovery
 
@@ -118,6 +136,12 @@ Then validate structure and freshness:
 
 ```sh
 npx --no-install durable-subconscious check --project . --strict-coverage
+```
+
+Verify conceptual retrieval through the same freshness gate:
+
+```sh
+npx --no-install durable-subconscious query "where is persistence owned" --project . --depth 1
 ```
 
 See `docs/SCHEMA.md` for capability coverage, golden journeys, typed gaps, and
