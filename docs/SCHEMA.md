@@ -4,6 +4,23 @@ Durable Subconscious stores project-local knowledge as JSON-form YAML 1.2. The
 current configuration and graph schema version is `1`. JSON is used so Node.js can
 load the files without a runtime dependency.
 
+## Who this reference is for
+
+This document is primarily a technical reference for AI agents performing the
+evidence-mapping workflow, contributors working on Durable Subconscious, and
+advanced users auditing or deliberately customizing project knowledge. In a normal
+supported-agent workflow, developers are not expected to construct or maintain
+nodes and edges by hand. The one-time setup prompt directs the agent to map
+available project source, tests, configuration, and accepted documents. Persistent
+project instructions then direct later agent sessions to consult that knowledge and
+update affected memories after verified changes.
+
+Schema validation detects malformed or unsupported knowledge, missing required
+evidence, and weakened declared coverage; it is not intended to create a recurring
+schema-authoring chore for the developer. The agent may still surface stale or
+unknown evidence and unresolved relationships for explicit review and
+reconciliation rather than inventing an answer.
+
 ## Configuration
 
 The default configuration is `.durable-subconscious/config.json`:

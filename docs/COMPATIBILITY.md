@@ -7,6 +7,23 @@ managed loader to one documented project instruction file. Every adapter loads t
 `.durable-subconscious/agent-guide.md`; there are no agent-specific forks of the
 operating lifecycle.
 
+## Intended routine workflow
+
+A developer installs Durable Subconscious once and gives the selected coding agent
+the setup prompt. The adapter installs a persistent loader for the canonical guide;
+the setup agent performs the initial evidence-backed mapping, and later sessions
+are intended to consult that memory before relevant work and update affected
+knowledge after verified changes. In a supported workflow, this does not require a
+repeated setup prompt or routine manual graph editing.
+
+That behavior still depends on the external agent loading and following its
+installed instructions. Codex is independently verified across fresh sessions;
+the other five integrations are adapter-tested but remain actual-agent-session
+**UNVERIFIED**. The manual commands documented below remain available for recovery,
+troubleshooting, core-only use, and deliberate reconciliation when external
+changes, missing evidence, or unresolved relationships require review. They are
+not a requirement to manually maintain the graph after every ordinary change.
+
 The core freshness gate and explicit reconciliation command are agent-independent.
 Adapters receive the same instruction to stop on stale or unknown evidence and to
 advance a baseline only after evidence-backed reconciliation. Only Codex has the

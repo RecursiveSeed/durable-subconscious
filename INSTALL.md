@@ -1,5 +1,25 @@
 # Installation and configuration
 
+## Normal developer experience
+
+**Install once → Give the AI one setup prompt → Let the AI maintain relevant
+knowledge during development.**
+
+The setup session initializes project-local knowledge from available evidence and
+installs persistent project instructions for the selected agent. Later sessions
+are intended to consult that knowledge before relevant work, verify its freshness,
+and update affected memories after verified changes. During normal supported-agent
+operation, the developer does not repeat setup or manually edit graph nodes and
+relationships. The package runs locally without a required cloud service.
+
+Automatic maintenance depends on the agent loading and following its installed
+instructions. Codex is independently verified across fresh sessions; Claude Code,
+Cursor, GitHub Copilot, Gemini CLI, and OpenCode are adapter-tested but remain
+actual-agent-session **UNVERIFIED**. External source changes, missing evidence, or
+unresolved relationships can require explicit review and reconciliation. The
+advanced commands below remain available for those cases, core-only use, recovery,
+and troubleshooting.
+
 ## Requirements
 
 - Node.js 20 or newer
@@ -57,6 +77,11 @@ Repeated setup is idempotent. It installs no unrelated agent instruction files.
 The canonical workflow remains `.durable-subconscious/agent-guide.md`; adapters do
 not copy or fork its requirements. See `docs/COMPATIBILITY.md` for the distinction
 between independently verified and documented-but-unverified environments.
+
+During the first session, the setup agent follows that guide to inspect project
+evidence, build the initial map, run relevant tests and validation, and establish
+the reviewed freshness baseline. The developer is not expected to hand-author the
+schema as part of normal setup.
 
 ## Upgrade from v0.3 or v0.4
 
@@ -125,8 +150,10 @@ This creates the knowledge directory but no persistent agent instructions.
 
 ## Validate installation
 
-After the first evidence-backed mapping and project tests, explicitly establish the
-reviewed baseline:
+During one-prompt setup, the agent performs the evidence-backed mapping and project
+tests, then explicitly establishes the reviewed baseline. These commands document
+what the agent runs and remain available for auditing, core-only operation, and
+troubleshooting:
 
 ```sh
 npx --no-install durable-subconscious reconcile --project . --accept-current-evidence
@@ -148,9 +175,11 @@ See `docs/SCHEMA.md` for capability coverage, golden journeys, typed gaps, and
 privacy/storage decisions. Structural success is not proof that arbitrary source
 contains no unrecorded capability.
 
-For later independent changes, give the agent the human reconciliation prompt in
-[`docs/FRESHNESS.md`](docs/FRESHNESS.md). `check`, `impact`, and `discover` are
-read-only and never advance the trusted baseline.
+Persistent instructions direct routine maintenance after relevant changes. If
+source changes occur outside the active agent workflow, freshness becomes stale or
+unknown, or a relationship remains unresolved, give the agent the reconciliation
+prompt in [`docs/FRESHNESS.md`](docs/FRESHNESS.md). `check`, `impact`, and
+`discover` are read-only and never advance the trusted baseline.
 
 ## Development verification
 
