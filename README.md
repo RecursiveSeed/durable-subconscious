@@ -1,11 +1,30 @@
 # Durable Subconscious
 
-Durable Subconscious gives AI coding agents durable, project-local architectural
-memory across sessions. It records evidence-backed ownership, dependencies,
-lifecycle, persistence, risks, and tests, then finds relevant knowledge from a
-natural-language concept and verifies it through the authoritative impact and
-freshness engine. The core is a local Node.js tool with no runtime packages,
-cloud service, or model-provider dependency.
+**Give your AI coding agent persistent project knowledge—without maintaining it
+yourself.**
+
+Install Durable Subconscious once and give a supported coding agent one setup
+prompt. It creates and preserves project-local memory for architecture,
+dependencies, ownership, and other verified project knowledge, then installs
+persistent project instructions
+that tell the agent to consult that memory before changes and update affected
+memories after verified code changes. In normal supported-agent workflows, later
+sessions pick this up automatically: there is no repeated setup prompt and no
+routine manual graph editing. Everything runs locally without a required cloud
+service.
+
+Before relying on remembered relationships, Durable Subconscious checks their
+source-evidence freshness so stale information is not silently trusted. Automatic
+maintenance still depends on the agent loading and following its installed
+instructions. External changes, missing evidence, or unresolved relationships can
+require explicit review and reconciliation; this is not a guarantee of zero
+maintenance or universal AI compatibility.
+
+Under the hood, Durable Subconscious records evidence-backed ownership,
+dependencies, lifecycle, persistence, risks, and tests, then finds relevant
+knowledge from a natural-language concept and verifies it through the authoritative
+impact and freshness engine. The core is a local Node.js tool with no runtime
+packages or model-provider dependency.
 
 The system is deliberately not a source of product truth. Project code and accepted project documents remain authoritative. The graph remembers proven relationships and makes uncertainty visible; it does not infer permission or turn a structural check into functional acceptance.
 
