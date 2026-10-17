@@ -82,6 +82,7 @@ function createLegacyFixture(parent, version) {
   const guide = path.join(root, '.durable-subconscious', 'agent-guide.md');
   let guideContent = fs.readFileSync(guide, 'utf8');
   guideContent = stripManagedGuideBlock(guideContent, 'concept');
+  guideContent = stripManagedGuideBlock(guideContent, 'contract');
   guideContent = stripManagedGuideBlock(guideContent, 'update');
   if (version.startsWith('0.3.')) guideContent = stripManagedGuideBlock(guideContent, 'freshness');
   fs.writeFileSync(guide, `${guideContent.trimEnd()}\n\n# Maintainer note\nKeep the observatory calibration rule.\n`);

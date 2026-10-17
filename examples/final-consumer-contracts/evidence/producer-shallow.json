@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "fixture": "Signal Harbor",
+  "command": "node --test examples/final-consumer-contracts/test/producer.test.mjs",
+  "scope": "component",
+  "status": "passed",
+  "assertions": [
+    "The producer returns the fictional beacon identity and raw state"
+  ]
+}

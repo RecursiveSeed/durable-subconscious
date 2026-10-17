@@ -7,6 +7,10 @@ export const DEFAULT_CONFIG_PATH = `${DEFAULT_STATE_DIRECTORY}/config.json`;
 export const EDGE_TYPES = new Set('OWNS READS WRITES PROJECTS TRANSFORMS PERSISTS HYDRATES CACHES INVALIDATES SCHEDULES CONSUMES FALLS_BACK_TO RECOVERS_WITH MUST_NOT_ACCESS MUST_NOT_CHANGE DISPLAYED_BY IMPLEMENTS_CAPABILITY PROTECTED_BY_TEST'.split(' '));
 export const SOURCES = new Set('CODE_DISCOVERED CANONICAL_CONTRACT HUMAN_APPROVED AUDIT_DISCOVERED INFERRED_PENDING_REVIEW'.split(' '));
 export const NODE_TYPES = new Set('system module authority state storage cache worker route provider surface capability test journey privacy issue'.split(' '));
+export const CONTRACT_KINDS = new Set(['shared_invariant', 'consumer_specific']);
+export const VERIFICATION_LEVELS = new Set(['executed', 'observed']);
+export const VERIFICATION_SCOPES = new Set(['component', 'integration', 'final_consumer']);
+export const VERIFICATION_STATUSES = new Set(['passed', 'failed']);
 
 function normalizeForbiddenSegment(value) {
   return String(value).trim().toLowerCase();
@@ -110,6 +114,50 @@ export function checkGraph(graph, {
     if (n.path) file(n.path, n.id);
     for (const p of n.maps || []) file(p, n.id);
     for (const p of n.evidence || []) file(p, n.id);
+    if (n.contract !== undefined) {
+      if (n.type !== 'capability' || !n.contract || typeof n.contract !== 'object' || Array.isArray(n.contract)) {
+        fail('CONTRACT_RECORD', n.id, 'Contract metadata is allowed only on capability nodes');
+      } else {
+        if (!CONTRACT_KINDS.has(n.contract.kind)) fail('CONTRACT_KIND', n.id, n.contract.kind);
+        const required = n.contract.required_verification;
+        if (required !== undefined) {
+          if (!required || typeof required !== 'object' || Array.isArray(required)) fail('VERIFICATION_REQUIREMENT', n.id, 'Required verification must be an object');
+          else {
+            if (!VERIFICATION_LEVELS.has(required.level)) fail('VERIFICATION_LEVEL', n.id, required.level);
+            if (!VERIFICATION_SCOPES.has(required.scope)) fail('VERIFICATION_SCOPE', n.id, required.scope);
+            if (!Array.isArray(required.evidence_nodes) || !required.evidence_nodes.length) {
+              fail('VERIFICATION_REQUIREMENT', n.id, 'Required verification must name every proof node needed to satisfy the contract');
+            } else {
+              for (const id of required.evidence_nodes) {
+                ref(id, n.id, 'required verification evidence');
+                const proof = nodes.get(id);
+                if (proof && !['test', 'journey'].includes(proof.type)) fail('VERIFICATION_REQUIREMENT_TYPE', n.id, `${id} is not a test or journey node`);
+                if (proof?.type === 'test' && required.level !== 'executed') fail('VERIFICATION_REQUIREMENT_TYPE', n.id, `${id} can provide executed evidence only`);
+                if (proof?.type === 'journey' && required.level !== 'observed') fail('VERIFICATION_REQUIREMENT_TYPE', n.id, `${id} can provide observed evidence only`);
+              }
+            }
+          }
+        }
+      }
+    }
+    if (n.verification !== undefined) {
+      const verification = n.verification;
+      if (!['test', 'journey'].includes(n.type) || !verification || typeof verification !== 'object' || Array.isArray(verification)) {
+        fail('VERIFICATION_RECORD', n.id, 'Verification metadata is allowed only on test and journey nodes');
+      } else {
+        if (!VERIFICATION_LEVELS.has(verification.level)) fail('VERIFICATION_LEVEL', n.id, verification.level);
+        if (n.type === 'test' && verification.level !== 'executed') fail('VERIFICATION_LEVEL', n.id, 'Test nodes record executed evidence');
+        if (n.type === 'journey' && verification.level !== 'observed') fail('VERIFICATION_LEVEL', n.id, 'Journey nodes record observed evidence');
+        if (!VERIFICATION_SCOPES.has(verification.scope)) fail('VERIFICATION_SCOPE', n.id, verification.scope);
+        if (!VERIFICATION_STATUSES.has(verification.status)) fail('VERIFICATION_STATUS', n.id, verification.status);
+        if (!SOURCES.has(verification.source)) fail('VERIFICATION_PROVENANCE', n.id, verification.source);
+        if (!Array.isArray(verification.evidence) || !verification.evidence.length) fail('VERIFICATION_EVIDENCE_MISSING', n.id, 'Executed or observed claims require evidence');
+        for (const item of verification.evidence || []) {
+          if (!item || typeof item.path !== 'string') fail('VERIFICATION_EVIDENCE', n.id, 'Verification evidence needs a project-relative path');
+          else file(item.path, n.id);
+        }
+      }
+    }
     for (const key of ['owner', 'hydration_owner', 'invalidation_owner', 'stale_owner', 'recovery_owner', 'privacy_boundary']) {
       if (n[key]) ref(n[key], n.id, key);
     }
@@ -126,6 +174,10 @@ export function checkGraph(graph, {
       if (n.accepted && !protection.length) missing(n, 'REGRESSION_MISSING', 'Planned journeys are not executable regression protection');
       if (capabilityCoverageRequired && (!n.coverage?.human_task || !n.coverage?.golden?.length)) fail('COVERAGE_MISSING', n.id, 'Human task and required journey mapping required');
       for (const id of n.coverage?.golden || []) ref(id, n.id, 'golden');
+      const linkedProofs = new Set([...protection.map(edge => edge.to), ...(n.coverage?.golden || [])]);
+      for (const id of n.contract?.required_verification?.evidence_nodes || []) {
+        if (!linkedProofs.has(id)) fail('VERIFICATION_REQUIREMENT_LINK', n.id, `${id} must be linked through PROTECTED_BY_TEST or coverage.golden`);
+      }
     }
     for (const g of n.gaps || []) {
       if (!g.code || !g.reason || !g.evidence) fail('GAP_RECORD', n.id, 'Gaps need typed reason/evidence');
@@ -154,6 +206,69 @@ export function projectCheckOptions(project) {
     requiredCapabilityIds: rules.required_capability_ids || [],
     capabilityCoverageRequired: rules.capability_coverage_required !== false,
   };
+}
+
+export function summarizeContractVerification(graph, capabilityIds = null) {
+  const nodes = new Map((graph.nodes || []).map(node => [node.id, node]));
+  const selected = capabilityIds ? new Set(capabilityIds) : null;
+  return (graph.nodes || [])
+    .filter(node => node.type === 'capability' && (!selected || selected.has(node.id)))
+    .map(capability => {
+      const testIds = (graph.edges || [])
+        .filter(edge => edge.from === capability.id && edge.type === 'PROTECTED_BY_TEST')
+        .map(edge => edge.to);
+      const journeyIds = capability.coverage?.golden || [];
+      const evidenceNodes = [...new Set([...testIds, ...journeyIds])]
+        .map(id => nodes.get(id))
+        .filter(Boolean)
+        .map(node => {
+          const verification = node.verification;
+          return {
+            node_id: node.id,
+            node_type: node.type,
+            label: node.label,
+            level: verification?.level || 'declared',
+            scope: verification?.scope || 'unknown',
+            status: verification?.status || 'unknown',
+            source: verification?.source || null,
+            evidence: (verification?.evidence || []).map(item => item.path),
+          };
+        });
+      const implementation_ids = (graph.edges || [])
+        .filter(edge => edge.to === capability.id && edge.type === 'IMPLEMENTS_CAPABILITY')
+        .map(edge => edge.from)
+        .sort();
+      const required = capability.contract?.required_verification || null;
+      const requiredIds = new Set(required?.evidence_nodes || []);
+      const requiredEvidence = evidenceNodes.filter(item => requiredIds.has(item.node_id));
+      const matching = required
+        ? requiredEvidence.filter(item => item.level === required.level && item.scope === required.scope)
+        : [];
+      const failing = matching.filter(item => item.status === 'failed').map(item => item.node_id);
+      const passing = matching.filter(item => item.status === 'passed').map(item => item.node_id);
+      const satisfied = required && requiredIds.size > 0 && [...requiredIds].every(id => passing.includes(id));
+      const status = !required ? 'not_declared' : failing.length ? 'failed' : satisfied ? 'passed' : 'unknown';
+      const reason = status === 'not_declared'
+        ? 'No behavioral verification requirement is declared for this capability'
+        : status === 'unknown'
+          ? `Not every required ${required.level}/${required.scope} proof establishes the contract`
+          : status === 'failed'
+            ? `Linked ${required.level}/${required.scope} evidence records a failure`
+            : `Linked ${required.level}/${required.scope} evidence records a pass`;
+      return {
+        capability_id: capability.id,
+        label: capability.label,
+        contract_kind: capability.contract?.kind || 'unspecified',
+        implementation_ids,
+        required_verification: required,
+        status,
+        reason,
+        satisfying_evidence: passing,
+        failing_evidence: failing,
+        required_evidence: [...requiredIds],
+        verification_nodes: evidenceNodes,
+      };
+    });
 }
 
 export function impact(graph, inputs, { maxDepth = 8, root = process.cwd(), memoryFiles = [], projectName = 'project' } = {}) {
@@ -221,11 +336,13 @@ export function impact(graph, inputs, { maxDepth = 8, root = process.cwd(), memo
   const found = [...reached.values()].map(r => ({ ...nodes.get(r.id), depth: r.depth, via: r.via }));
   const take = types => found.filter(n => types.includes(n.type));
   const direct = (graph.edges || []).filter(e => targets.has(e.from) || targets.has(e.to));
+  const capabilities = take(['capability']);
   return {
     project_name: projectName,
     targets: [...targets], unknown, direct, reached: found, frontiers,
-    authorities: take(['authority']), capabilities: take(['capability']), privacy: take(['privacy']),
+    authorities: take(['authority']), capabilities, privacy: take(['privacy']),
     state_risks: take(['state', 'cache', 'worker', 'storage']), tests: take(['test']), journeys: take(['journey']), issues: take(['issue']),
+    contract_verification: summarizeContractVerification(graph, capabilities.map(node => node.id)),
     maps: [...new Set([...memoryFiles, ...found.flatMap(n => n.maps || [])])].sort(),
   };
 }
@@ -250,6 +367,17 @@ export function formatImpact(result) {
   const freshness = result.freshness
     ? `\nEVIDENCE FRESHNESS\n- status: ${result.freshness.status}\n- baseline: ${result.freshness.baseline}\n- ${result.freshness.disclaimer}${result.freshness.stale?.length ? `\n- stale: ${result.freshness.stale.join(', ')}` : ''}${result.freshness.unknown?.length ? `\n- unknown: ${result.freshness.unknown.join('; ')}` : ''}\n`
     : '';
+  const contracts = result.contract_verification || [];
+  const contractLines = contracts.map(contract => {
+    const required = contract.required_verification
+      ? `${contract.required_verification.level}/${contract.required_verification.scope}`
+      : 'not declared';
+    return `${contract.capability_id}: ${contract.contract_kind}; required=${required}; proofs=${contract.required_evidence.join(', ') || 'none'}; status=${contract.trusted_status || contract.status}; consumers=${contract.implementation_ids.join(', ') || 'none'}`;
+  });
+  const verificationLines = contracts.flatMap(contract => contract.verification_nodes.map(item => `${item.node_id}: ${item.level}/${item.scope} ${item.status}${item.source ? ` [${item.source}${item.freshness_status ? `; ${item.freshness_status}` : ''}]` : ''}${item.evidence.length ? ` evidence=${item.evidence.join(', ')}` : ' [DECLARED COVERAGE ONLY]'}`));
+  const unknownLines = contracts
+    .filter(contract => (contract.trusted_status || contract.status) === 'unknown')
+    .map(contract => `${contract.capability_id}: ${contract.reason}`);
   return `DURABLE SUBCONSCIOUS IMPACT — ${result.project_name}\n`
     + freshness
     + section('LASER TARGET', result.targets)
@@ -258,6 +386,9 @@ export function formatImpact(result) {
     + section(rememberedTitle('RECURSIVE BLAST RADIUS (non-boundary nodes)'), result.reached.filter(n => !['capability', 'test', 'journey', 'privacy'].includes(n.type)))
     + section(rememberedTitle('AFFECTED AUTHORITIES'), result.authorities)
     + section(rememberedTitle('AFFECTED CAPABILITIES'), result.capabilities)
+    + section(rememberedTitle('AFFECTED BEHAVIORAL CONTRACTS'), contractLines)
+    + section(rememberedTitle('BEHAVIORAL VERIFICATION EVIDENCE'), verificationLines)
+    + section(rememberedTitle('VERIFICATION BOUNDARIES — UNKNOWN'), unknownLines)
     + section(rememberedTitle('PRIVACY RISKS'), result.privacy)
     + section(rememberedTitle('STATE/CACHE/INVALIDATION RISKS'), result.state_risks)
     + section(rememberedTitle('REQUIRED CONTRACT TESTS — SCOPE-LIMITED'), result.tests)

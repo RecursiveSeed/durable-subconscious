@@ -88,6 +88,7 @@ function graphEvidencePaths(project) {
     if (node.path) values.add(node.path);
     for (const value of node.maps || []) values.add(value);
     for (const value of node.evidence || []) values.add(value);
+    for (const item of node.verification?.evidence || []) if (item.path) values.add(item.path);
     for (const gap of node.gaps || []) if (gap.evidence) values.add(gap.evidence);
   }
   for (const edge of project.graph.edges || []) {
@@ -256,6 +257,7 @@ function relevantPathsForImpact(project, result) {
     if (node.type === 'module' && node.path && node.discovery !== false) moduleFiles.push(node.path.replace(/\\/g, '/'));
     for (const value of node.maps || []) paths.add(value.replace(/\\/g, '/'));
     for (const value of node.evidence || []) paths.add(value.replace(/\\/g, '/'));
+    for (const item of node.verification?.evidence || []) if (item.path) paths.add(item.path.replace(/\\/g, '/'));
     for (const gap of node.gaps || []) if (gap.evidence) paths.add(gap.evidence.replace(/\\/g, '/'));
   }
   for (const edge of project.graph.edges || []) {
@@ -440,12 +442,38 @@ export function applyFreshnessToImpact(result, verification) {
     return 'current';
   };
   const direct = (result.direct || []).map(edge => ({ ...edge, freshness_status: statusFor(edge) }));
+  const statusForPaths = paths => {
+    if (verification.status === 'unknown') return 'unknown';
+    if (paths.some(value => stalePaths.has(value.replace(/\\/g, '/')))) return 'stale';
+    if (verification.status === 'stale') return 'unknown';
+    return 'current';
+  };
+  const contractVerification = (result.contract_verification || []).map(contract => {
+    const verificationNodes = contract.verification_nodes.map(item => ({
+      ...item,
+      freshness_status: statusForPaths(item.evidence || []),
+    }));
+    const decisive = new Set(contract.status === 'failed' ? contract.failing_evidence : contract.satisfying_evidence);
+    const currentIds = new Set(verificationNodes.filter(item => item.freshness_status === 'current').map(item => item.node_id));
+    const currentProof = contract.status === 'passed'
+      ? decisive.size > 0 && [...decisive].every(id => currentIds.has(id))
+      : [...decisive].some(id => currentIds.has(id));
+    const trustedStatus = ['passed', 'failed'].includes(contract.status) && !currentProof ? 'unknown' : contract.status;
+    return {
+      ...contract,
+      verification_nodes: verificationNodes,
+      recorded_status: contract.status,
+      trusted_status: trustedStatus,
+      freshness_status: verification.status,
+    };
+  });
   return {
     ...result,
     verified_current: verification.status === 'current',
     direct,
     verified_direct: direct.filter(edge => edge.freshness_status === 'current'),
     unverified_direct: direct.filter(edge => edge.freshness_status !== 'current'),
+    contract_verification: contractVerification,
     freshness: verification,
   };
 }

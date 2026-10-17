@@ -12,6 +12,8 @@ export const CONCEPT_GUIDE_BLOCK_START = '<!-- durable-subconscious:concept-guid
 export const CONCEPT_GUIDE_BLOCK_END = '<!-- durable-subconscious:concept-guide:end -->';
 export const UPDATE_GUIDE_BLOCK_START = '<!-- durable-subconscious:update-guide:start -->';
 export const UPDATE_GUIDE_BLOCK_END = '<!-- durable-subconscious:update-guide:end -->';
+export const CONTRACT_GUIDE_BLOCK_START = '<!-- durable-subconscious:contract-guide:start -->';
+export const CONTRACT_GUIDE_BLOCK_END = '<!-- durable-subconscious:contract-guide:end -->';
 
 const FRESHNESS_GUIDE_BLOCK = `${FRESHNESS_GUIDE_BLOCK_START}
 ## Freshness and reconciliation requirements (managed)
@@ -57,6 +59,24 @@ supported stable transition, preserve project knowledge and authored instruction
 and report freshness or unresolved relationships without accepting new evidence.
 Use INSTALL.md for the one-time v0.3/v0.4 bootstrap and rollback procedure.
 ${UPDATE_GUIDE_BLOCK_END}`;
+
+const CONTRACT_GUIDE_BLOCK = `${CONTRACT_GUIDE_BLOCK_START}
+## Final-consumer contract verification (managed)
+
+Keep shared invariants and consumer-specific behavior as separate capability
+contracts connected through the existing IMPLEMENTS_CAPABILITY and
+PROTECTED_BY_TEST relationships. A mapped or implemented test establishes declared
+coverage only. Record executed or observed verification metadata only when the
+named evidence supports that level and scope; a passing component test does not
+prove final-consumer behavior.
+
+For affected contracts, follow the focused workflow: find the owner, follow the
+contract, inspect its relevant verification evidence, implement, run the
+proportional test, and update knowledge. Preserve missing final-consumer proof as
+UNKNOWN instead of manufacturing confidence. Require final-consumer or observed
+acceptance only when the declared contract and risk call for it; do not expand a
+localized change into an unrelated full-project audit.
+${CONTRACT_GUIDE_BLOCK_END}`;
 
 export const AGENT_GUIDE = `# Durable Subconscious project guide
 
@@ -114,6 +134,8 @@ stale even while check succeeds.
 ${FRESHNESS_GUIDE_BLOCK}
 
 ${CONCEPT_GUIDE_BLOCK}
+
+${CONTRACT_GUIDE_BLOCK}
 
 ${UPDATE_GUIDE_BLOCK}
 `;
@@ -207,6 +229,7 @@ export function ensureAgentGuide(root) {
   };
   let next = replaceManaged(current, FRESHNESS_GUIDE_BLOCK_START, FRESHNESS_GUIDE_BLOCK_END, FRESHNESS_GUIDE_BLOCK, 'freshness');
   next = replaceManaged(next, CONCEPT_GUIDE_BLOCK_START, CONCEPT_GUIDE_BLOCK_END, CONCEPT_GUIDE_BLOCK, 'concept');
+  next = replaceManaged(next, CONTRACT_GUIDE_BLOCK_START, CONTRACT_GUIDE_BLOCK_END, CONTRACT_GUIDE_BLOCK, 'contract');
   next = replaceManaged(next, UPDATE_GUIDE_BLOCK_START, UPDATE_GUIDE_BLOCK_END, UPDATE_GUIDE_BLOCK, 'update');
   if (next === current) return { path: guide, created: false, updated: false };
   const temporary = `${guide}.${process.pid}.${Date.now()}.new`;

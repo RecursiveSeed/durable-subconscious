@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "project_name": "Signal Harbor",
+  "graph": "subconscious/graph.json",
+  "freshness": "subconscious/freshness.json",
+  "concept_index": "subconscious/concept-index.json",
+  "memory_files": [
+    "subconscious/maps/overview.md",
+    "subconscious/maps/authority.md",
+    "subconscious/maps/test-coverage.md"
+  ],
+  "forbidden_path_segments": [
+    ".git",
+    "node_modules",
+    ".env",
+    "secrets",
+    "credentials"
+  ],
+  "graph_rules": {
+    "capability_coverage_required": true,
+    "expected_capability_count": 4,
+    "required_capability_ids": [
+      "CAP-SHARED-IDENTITY",
+      "CAP-PANEL-PRESENTATION",
+      "CAP-ARCHIVE-FORMAT",
+      "CAP-PANEL-HUMAN"
+    ]
+  }
+}

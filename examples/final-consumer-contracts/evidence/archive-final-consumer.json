@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "fixture": "Signal Harbor",
+  "command": "node --test examples/final-consumer-contracts/test/archive-feed.test.mjs",
+  "scope": "final_consumer",
+  "status": "passed",
+  "assertions": [
+    "The archive feed preserves the beacon identity",
+    "The archive feed preserves the lowercase machine state"
+  ]
+}

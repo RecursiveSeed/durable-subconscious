@@ -35,6 +35,6 @@
   "scripts": {
     "check:example": "node bin/durable-subconscious.mjs check --project examples/synthetic-project --config subconscious/config.json",
     "discover:example": "node bin/durable-subconscious.mjs discover --project examples/synthetic-project --config subconscious/config.json",
-    "test": "node --test test/core.test.mjs test/v050.test.mjs examples/synthetic-project/test/catalog.test.mjs"
+    "test": "node --test test/core.test.mjs test/v050.test.mjs test/final-consumer-contracts.test.mjs examples/synthetic-project/test/catalog.test.mjs examples/final-consumer-contracts/test/producer.test.mjs examples/final-consumer-contracts/test/control-panel.test.mjs examples/final-consumer-contracts/test/archive-feed.test.mjs"
   }
 }

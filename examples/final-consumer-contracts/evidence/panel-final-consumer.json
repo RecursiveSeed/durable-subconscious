@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "fixture": "Signal Harbor",
+  "command": "node --test examples/final-consumer-contracts/test/control-panel.test.mjs",
+  "scope": "final_consumer",
+  "status": "passed",
+  "assertions": [
+    "The panel preserves the beacon identity",
+    "The panel displays the uppercase READY badge",
+    "The panel exposes the matching accessible label"
+  ]
+}

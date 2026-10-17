@@ -122,6 +122,76 @@ Accepted capabilities also require:
 
 Journey descriptions do not become executable tests merely by being listed.
 
+### Behavioral contract and verification metadata
+
+Capability coverage describes intended protection. It does not, by itself, prove
+that a test was run or that a final consumer preserved its contract. A capability
+may therefore declare an optional behavioral `contract`:
+
+```json
+{
+  "id": "CAP-SHARED-IDENTITY",
+  "type": "capability",
+  "label": "Every consumer preserves the item identity",
+  "accepted": true,
+  "contract": {
+    "kind": "shared_invariant",
+    "required_verification": {
+      "level": "executed",
+      "scope": "final_consumer",
+      "evidence_nodes": ["test.web-final", "test.export-final"]
+    }
+  },
+  "coverage": {
+    "human_task": "Exercise both consumers and compare the item identity",
+    "golden": ["journey.item-identity"]
+  }
+}
+```
+
+`kind` is `shared_invariant` or `consumer_specific`. Required verification names
+the exact linked test or journey nodes that must establish the contract. This is
+important for connected systems: one passing consumer cannot certify a shared
+invariant whose other required consumers are unverified. Every named proof must
+be linked through `PROTECTED_BY_TEST` or `coverage.golden`.
+
+Test and journey nodes may record the evidence actually obtained:
+
+```json
+{
+  "id": "test.web-final",
+  "type": "test",
+  "label": "Web final-consumer contract",
+  "path": "test/web-final.test.mjs",
+  "implemented": true,
+  "verification": {
+    "level": "executed",
+    "scope": "final_consumer",
+    "status": "passed",
+    "source": "AUDIT_DISCOVERED",
+    "evidence": [{ "path": "evidence/web-final.json" }]
+  }
+}
+```
+
+- `test` nodes record `executed` evidence. `journey` nodes record `observed`
+  runtime or human-visible evidence.
+- `scope` is `component`, `integration`, or `final_consumer`; `status` is `passed`
+  or `failed`.
+- A required contract passes only when every named proof has a matching level and
+  scope and records a pass. A matching failure reports failure. Missing, declared-
+  only, mismatched, or stale proof remains `unknown`.
+- Evidence paths use the existing provenance and freshness mechanisms. A current
+  fingerprint means the recorded evidence is unchanged, not that its semantics
+  are complete.
+
+These fields are optional. Existing v0.5.0 graphs without them remain valid and
+report behavioral verification as `not_declared`. Use the metadata only for
+contracts whose risk warrants an explicit verification boundary; it does not make
+full-project end-to-end testing mandatory for localized work. See
+`examples/final-consumer-contracts` for a fully fictional producer with distinct
+consumer obligations and an intentionally unknown observed-acceptance boundary.
+
 ## Edges and provenance
 
 Every edge requires a unique `id`, `from`, `type`, `to`, `source`, `impact`, and at

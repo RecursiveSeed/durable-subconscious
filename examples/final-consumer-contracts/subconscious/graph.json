@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "format": "JSON-form YAML 1.2",
+  "project": "Signal Harbor",
+  "nodes": [
+    { "id": "signal.owner", "type": "authority", "label": "Signal Harbor maintainer" },
+    {
+      "id": "signal.harbor",
+      "type": "system",
+      "label": "Signal Harbor",
+      "owner": "signal.owner",
+      "maps": [
+        "subconscious/maps/overview.md",
+        "subconscious/maps/authority.md",
+        "subconscious/maps/test-coverage.md"
+      ]
+    },
+    { "id": "module.beacon-source", "type": "module", "label": "Beacon source", "path": "source/beacon-source.mjs", "owner": "signal.owner" },
+    { "id": "module.control-panel", "type": "module", "label": "Control panel final consumer", "path": "source/control-panel.mjs", "owner": "signal.owner" },
+    { "id": "module.archive-feed", "type": "module", "label": "Archive feed final consumer", "path": "source/archive-feed.mjs", "owner": "signal.owner" },
+    {
+      "id": "test.producer-shallow",
+      "type": "test",
+      "label": "Shallow beacon producer test",
+      "path": "test/producer.test.mjs",
+      "implemented": true,
+      "verification": {
+        "level": "executed",
+        "scope": "component",
+        "status": "passed",
+        "source": "AUDIT_DISCOVERED",
+        "evidence": [{ "path": "evidence/producer-shallow.json" }]
+      }
+    },
+    {
+      "id": "test.control-panel-final",
+      "type": "test",
+      "label": "Control panel final-consumer test",
+      "path": "test/control-panel.test.mjs",
+      "implemented": true,
+      "verification": {
+        "level": "executed",
+        "scope": "final_consumer",
+        "status": "passed",
+        "source": "AUDIT_DISCOVERED",
+        "evidence": [{ "path": "evidence/panel-final-consumer.json" }]
+      }
+    },
+    {
+      "id": "test.archive-final",
+      "type": "test",
+      "label": "Archive feed final-consumer test",
+      "path": "test/archive-feed.test.mjs",
+      "implemented": true,
+      "verification": {
+        "level": "executed",
+        "scope": "final_consumer",
+        "status": "passed",
+        "source": "AUDIT_DISCOVERED",
+        "evidence": [{ "path": "evidence/archive-final-consumer.json" }]
+      }
+    },
+    { "id": "journey.shared-identity", "type": "journey", "label": "Both consumers preserve the beacon identity" },
+    { "id": "journey.panel-visible", "type": "journey", "label": "Observe the panel status and accessible label" },
+    { "id": "journey.archive-record", "type": "journey", "label": "Inspect the lowercase archive record" },
+    {
+      "id": "CAP-SHARED-IDENTITY",
+      "type": "capability",
+      "label": "Shared invariant: preserve beacon identity",
+      "accepted": true,
+      "contract": {
+        "kind": "shared_invariant",
+        "required_verification": {
+          "level": "executed",
+          "scope": "final_consumer",
+          "evidence_nodes": ["test.control-panel-final", "test.archive-final"]
+        }
+      },
+      "coverage": {
+        "human_task": "Use both consumers and verify the beacon identity is unchanged",
+        "golden": ["journey.shared-identity"]
+      }
+    },
+    {
+      "id": "CAP-PANEL-PRESENTATION",
+      "type": "capability",
+      "label": "Consumer contract: panel uses uppercase presentation",
+      "accepted": true,
+      "contract": {
+        "kind": "consumer_specific",
+        "required_verification": {
+          "level": "executed",
+          "scope": "final_consumer",
+          "evidence_nodes": ["test.control-panel-final"]
+        }
+      },
+      "coverage": {
+        "human_task": "Read the panel badge and accessible label",
+        "golden": ["journey.panel-visible"]
+      }
+    },
+    {
+      "id": "CAP-ARCHIVE-FORMAT",
+      "type": "capability",
+      "label": "Consumer contract: archive preserves lowercase state",
+      "accepted": true,
+      "contract": {
+        "kind": "consumer_specific",
+        "required_verification": {
+          "level": "executed",
+          "scope": "final_consumer",
+          "evidence_nodes": ["test.archive-final"]
+        }
+      },
+      "coverage": {
+        "human_task": "Inspect the machine archive record",
+        "golden": ["journey.archive-record"]
+      }
+    },
+    {
+      "id": "CAP-PANEL-HUMAN",
+      "type": "capability",
+      "label": "Consumer contract: panel is human-visible and accessible",
+      "accepted": true,
+      "contract": {
+        "kind": "consumer_specific",
+        "required_verification": {
+          "level": "observed",
+          "scope": "final_consumer",
+          "evidence_nodes": ["journey.panel-visible"]
+        }
+      },
+      "coverage": {
+        "human_task": "Observe the panel and its accessible label in the final surface",
+        "golden": ["journey.panel-visible"]
+      },
+      "gaps": [
+        {
+          "code": "HUMAN_ACCEPTANCE_UNKNOWN",
+          "reason": "No independent observed final-surface evidence is linked in the base fixture",
+          "evidence": "subconscious/maps/test-coverage.md"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "owner-owns-signal-harbor", "from": "signal.owner", "type": "OWNS", "to": "signal.harbor", "source": "CANONICAL_CONTRACT", "impact": "forward",
+      "evidence": [{ "path": "subconscious/maps/authority.md" }]
+    },
+    {
+      "id": "source-transforms-panel", "from": "module.beacon-source", "type": "TRANSFORMS", "to": "module.control-panel", "source": "CODE_DISCOVERED", "impact": "forward",
+      "evidence": [{ "path": "source/control-panel.mjs", "line": 2 }]
+    },
+    {
+      "id": "source-transforms-archive", "from": "module.beacon-source", "type": "TRANSFORMS", "to": "module.archive-feed", "source": "CODE_DISCOVERED", "impact": "forward",
+      "evidence": [{ "path": "source/archive-feed.mjs", "line": 2 }]
+    },
+    {
+      "id": "panel-implements-shared", "from": "module.control-panel", "type": "IMPLEMENTS_CAPABILITY", "to": "CAP-SHARED-IDENTITY", "source": "CANONICAL_CONTRACT", "impact": "forward",
+      "evidence": [{ "path": "subconscious/maps/overview.md" }]
+    },
+    {
+      "id": "archive-implements-shared", "from": "module.archive-feed", "type": "IMPLEMENTS_CAPABILITY", "to": "CAP-SHARED-IDENTITY", "source": "CANONICAL_CONTRACT", "impact": "forward",
+      "evidence": [{ "path": "subconscious/maps/overview.md" }]
+    },
+    {
+      "id": "panel-implements-presentation", "from": "module.control-panel", "type": "IMPLEMENTS_CAPABILITY", "to": "CAP-PANEL-PRESENTATION", "source": "CANONICAL_CONTRACT", "impact": "forward",
+      "evidence": [{ "path": "subconscious/maps/overview.md" }]
+    },
+    {
+      "id": "archive-implements-format", "from": "module.archive-feed", "type": "IMPLEMENTS_CAPABILITY", "to": "CAP-ARCHIVE-FORMAT", "source": "CANONICAL_CONTRACT", "impact": "forward",
+      "evidence": [{ "path": "subconscious/maps/overview.md" }]
+    },
+    {
+      "id": "panel-implements-human", "from": "module.control-panel", "type": "IMPLEMENTS_CAPABILITY", "to": "CAP-PANEL-HUMAN", "source": "CANONICAL_CONTRACT", "impact": "forward",
+      "evidence": [{ "path": "subconscious/maps/overview.md" }]
+    },
+    {
+      "id": "shared-protected-by-panel", "from": "CAP-SHARED-IDENTITY", "type": "PROTECTED_BY_TEST", "to": "test.control-panel-final", "source": "CODE_DISCOVERED", "impact": "forward",
+      "evidence": [{ "path": "test/control-panel.test.mjs" }]
+    },
+    {
+      "id": "shared-protected-by-archive", "from": "CAP-SHARED-IDENTITY", "type": "PROTECTED_BY_TEST", "to": "test.archive-final", "source": "CODE_DISCOVERED", "impact": "forward",
+      "evidence": [{ "path": "test/archive-feed.test.mjs" }]
+    },
+    {
+      "id": "panel-protected-shallow", "from": "CAP-PANEL-PRESENTATION", "type": "PROTECTED_BY_TEST", "to": "test.producer-shallow", "source": "CODE_DISCOVERED", "impact": "forward",
+      "evidence": [{ "path": "test/producer.test.mjs" }]
+    },
+    {
+      "id": "panel-protected-final", "from": "CAP-PANEL-PRESENTATION", "type": "PROTECTED_BY_TEST", "to": "test.control-panel-final", "source": "CODE_DISCOVERED", "impact": "forward",
+      "evidence": [{ "path": "test/control-panel.test.mjs" }]
+    },
+    {
+      "id": "archive-protected-final", "from": "CAP-ARCHIVE-FORMAT", "type": "PROTECTED_BY_TEST", "to": "test.archive-final", "source": "CODE_DISCOVERED", "impact": "forward",
+      "evidence": [{ "path": "test/archive-feed.test.mjs" }]
+    },
+    {
+      "id": "panel-human-protected-final", "from": "CAP-PANEL-HUMAN", "type": "PROTECTED_BY_TEST", "to": "test.control-panel-final", "source": "CODE_DISCOVERED", "impact": "forward",
+      "evidence": [{ "path": "test/control-panel.test.mjs" }]
+    }
+  ]
+}

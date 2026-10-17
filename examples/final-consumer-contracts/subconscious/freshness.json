@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "algorithm": "sha256",
+  "graph_sha256": "7ac71468626314ca709a1fb1eea1cbfd3eb3e794a151181e09eab42f48fab0c3",
+  "evidence": {
+    "evidence/archive-final-consumer.json": {
+      "sha256": "bc28a51f9569fb0801dc622a07c967e881ddc34f8373db39c6e4d21ee2a02af3",
+      "size": 334
+    },
+    "evidence/panel-final-consumer.json": {
+      "sha256": "f40297c8b817ed422033a5cdd921b1f8899bd3e31465690021d5c259a98f4702",
+      "size": 373
+    },
+    "evidence/producer-shallow.json": {
+      "sha256": "e87f23882123075015b5203da8d3767c3a82a654b90a6199e5f7a5e46f67af36",
+      "size": 281
+    },
+    "source/archive-feed.mjs": {
+      "sha256": "d52ca20f4205b27abfafabcd459dbd8147f277170651cc887adee6a1f6ccb075",
+      "size": 276
+    },
+    "source/beacon-source.mjs": {
+      "sha256": "7874f3703b2fdeec87a7cd9830df399f52e5364ea9ad029fb96ca41276b99a67",
+      "size": 139
+    },
+    "source/control-panel.mjs": {
+      "sha256": "539b71c038219a363edba4b10f04d3ce524d9c0500c2b55f5d6a58f05f6a9fa6",
+      "size": 377
+    },
+    "subconscious/config.json": {
+      "sha256": "0722eb8c7d7e8a9ebedd0421f0ffd97ff9b71b5c9a485af495f7637429095376",
+      "size": 707
+    },
+    "subconscious/graph.json": {
+      "sha256": "7ac71468626314ca709a1fb1eea1cbfd3eb3e794a151181e09eab42f48fab0c3",
+      "size": 8635
+    },
+    "subconscious/maps/authority.md": {
+      "sha256": "6e426145812fbbb316137eca2a5fcee6ba0c2ba59d36073bc4228a3c4024c230",
+      "size": 210
+    },
+    "subconscious/maps/overview.md": {
+      "sha256": "b300322d47573ccbb3c5b27863833ac3bc6d75aab806c3f4fcaf112b01bbd0b9",
+      "size": 324
+    },
+    "subconscious/maps/test-coverage.md": {
+      "sha256": "e547171687a2224f5ff3691dfa1f453e356dceb4c51dc94ec84d2b09948f1487",
+      "size": 343
+    },
+    "test/archive-feed.test.mjs": {
+      "sha256": "bf5cf8945b539ca50b94b3e74b017bac2e94177adbe4cfe91bf1830bbbc62f60",
+      "size": 395
+    },
+    "test/control-panel.test.mjs": {
+      "sha256": "599337dfffebadaa2bdb93f569617bd87b59d0d581a8ce461eb665b71bea6682",
+      "size": 407
+    },
+    "test/producer.test.mjs": {
+      "sha256": "516f1de24ebb1f5834957454ec8eedf3c3522d42544cb4c6bc56e110af3af1ae",
+      "size": 326
+    }
+  },
+  "source_inventory": {
+    "roots": [
+      "test",
+      "source"
+    ],
+    "extensions": [
+      ".c",
+      ".cc",
+      ".cjs",
+      ".cpp",
+      ".cs",
+      ".css",
+      ".go",
+      ".h",
+      ".hpp",
+      ".html",
+      ".java",
+      ".js",
+      ".json",
+      ".jsx",
+      ".kt",
+      ".mjs",
+      ".php",
+      ".prisma",
+      ".proto",
+      ".py",
+      ".rb",
+      ".rs",
+      ".sh",
+      ".sql",
+      ".svelte",
+      ".swift",
+      ".ts",
+      ".tsx",
+      ".vue"
+    ],
+    "files": {
+      "source/archive-feed.mjs": {
+        "sha256": "d52ca20f4205b27abfafabcd459dbd8147f277170651cc887adee6a1f6ccb075",
+        "size": 276
+      },
+      "source/beacon-source.mjs": {
+        "sha256": "7874f3703b2fdeec87a7cd9830df399f52e5364ea9ad029fb96ca41276b99a67",
+        "size": 139
+      },
+      "source/control-panel.mjs": {
+        "sha256": "539b71c038219a363edba4b10f04d3ce524d9c0500c2b55f5d6a58f05f6a9fa6",
+        "size": 377
+      },
+      "test/archive-feed.test.mjs": {
+        "sha256": "bf5cf8945b539ca50b94b3e74b017bac2e94177adbe4cfe91bf1830bbbc62f60",
+        "size": 395
+      },
+      "test/control-panel.test.mjs": {
+        "sha256": "599337dfffebadaa2bdb93f569617bd87b59d0d581a8ce461eb665b71bea6682",
+        "size": 407
+      },
+      "test/producer.test.mjs": {
+        "sha256": "516f1de24ebb1f5834957454ec8eedf3c3522d42544cb4c6bc56e110af3af1ae",
+        "size": 326
+      }
+    }
+  },
+  "discovery": {
+    "method": "literal relative imports and API strings; comments/dynamic expressions may need review",
+    "imports": [
+      {
+        "file": "source/archive-feed.mjs",
+        "target": "source/beacon-source.mjs",
+        "line": 2
+      },
+      {
+        "file": "source/control-panel.mjs",
+        "target": "source/beacon-source.mjs",
+        "line": 2
+      }
+    ],
+    "api_strings": [],
+    "unresolved": []
+  },
+  "unresolved": [],
+  "reconciled_at": "2026-10-17T06:11:57.626Z"
+}
