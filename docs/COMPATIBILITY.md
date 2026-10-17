@@ -1,6 +1,6 @@
 # AI environment compatibility
 
-Durable Subconscious v0.5.0 keeps its engine, project knowledge, graph schema,
+Durable Subconscious v0.6.0 keeps its engine, project knowledge, graph schema,
 validation, conceptual retrieval, discovery, impact analysis, upgrades, and
 persistence independent of any model provider. An adapter only adds a small
 managed loader to one documented project instruction file. Every adapter loads the same project-local
@@ -33,7 +33,9 @@ that preserved project knowledge and custom instructions, and automatic retrieva
 from the upgraded integration in another fresh session. The five other
 environments remain agent-session **UNVERIFIED**.
 
-v0.5.0 is the current **Public Beta** release. It is not a claim of universal
+v0.6.0 preserves that verified lifecycle and adds engine-level final-consumer
+contract retrieval. It does not constitute a new independent session test for any
+adapter. v0.6.0 is the current **Public Beta** release. It is not a claim of universal
 compatibility or guaranteed automatic behavior across AI systems. Codex remains
 the only integration independently verified through fresh agent sessions. The
 other five integrations are adapter-tested but agent-session
@@ -54,7 +56,7 @@ other five integrations are adapter-tested but agent-session
 
 ## Matrix
 
-| Environment | Official persistent mechanism | Adapter installed by v0.5.0 | Executed status | Remaining independent test |
+| Environment | Official persistent mechanism | Adapter installed by v0.6.0 | Executed status | Remaining independent test |
 | --- | --- | --- | --- | --- |
 | OpenAI Codex | Root-to-leaf `AGENTS.md` instructions are discovered and injected | Root `AGENTS.md` | Independently verified and adapter tested | None for the tested Codex CLI path |
 | Claude Code | Project `CLAUDE.md` is persistent context; imports are supported | Root `CLAUDE.md`, importing the canonical guide | Documented, adapter tested, **UNVERIFIED** in an actual Claude session | Fresh Claude Code setup session and a separate uncued maintenance session |

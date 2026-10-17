@@ -26,9 +26,15 @@ knowledge from a natural-language concept and verifies it through the authoritat
 impact and freshness engine. The core is a local Node.js tool with no runtime
 packages or model-provider dependency.
 
+Durable Subconscious now also distinguishes architectural connections from
+verified behavior. A focused impact query can retrieve shared invariants,
+consumer-specific contracts, the exact proof nodes they require, and whether that
+proof is executed, observed, stale, failed, or still unknown. A connected graph or
+passing shallow test is never presented as final-consumer acceptance.
+
 The system is deliberately not a source of product truth. Project code and accepted project documents remain authoritative. The graph remembers proven relationships and makes uncertainty visible; it does not infer permission or turn a structural check into functional acceptance.
 
-> **Release status:** v0.5.0 is the current **Public Beta** release. The Codex
+> **Release status:** v0.6.0 is the current **Public Beta** release. The Codex
 > integration is independently verified end to end. Claude Code, Cursor, GitHub
 > Copilot, Gemini CLI, and OpenCode have documented instruction mechanisms and
 > tested adapters, but have not been verified in independent agent sessions.
@@ -54,6 +60,9 @@ only its own persistent instruction adapter. No database or account is required.
 - A typed, evidence-bearing dependency graph stored as JSON-form YAML 1.2.
 - Structural validation for ownership, persistence/hydration, cache invalidation, worker staleness/recovery, privacy boundaries, providers, capabilities, executable regression protection, and explicit gaps.
 - Recursive impact queries with bounded traversal, cycle handling, ownership context, protection leaves, and disclosed depth/co-location frontiers.
+- Optional behavioral contracts that separate shared invariants from
+  consumer-specific requirements and distinguish declared coverage, executed
+  tests, final-consumer proof, and observed acceptance.
 - A graph-hash-keyed conceptual navigation index that maps natural-language terms
   and optional aliases to focused stable-ID candidates, then delegates to the
   authoritative impact and freshness engine.
@@ -147,11 +156,11 @@ knowledge.
 
 ### Upgrading an existing installation
 
-v0.3 and v0.4 packages do not contain the updater. Install v0.5 once with npm,
+v0.3 and v0.4 packages do not contain the updater. Install v0.6 once with npm,
 review a bootstrap plan, and then apply it:
 
 ```sh
-npm install --save-dev github:RecursiveSeed/durable-subconscious#v0.5.0
+npm install --save-dev github:RecursiveSeed/durable-subconscious#v0.6.0
 npx --no-install durable-subconscious update --project . --bootstrap-from 0.4.0 --agent <agent>
 npx --no-install durable-subconscious update --project . --bootstrap-from 0.4.0 --agent <agent> --apply
 ```
@@ -215,6 +224,9 @@ npx --no-install durable-subconscious discover --project .
 ```
 
 See [`examples/synthetic-project`](examples/synthetic-project) for a complete fictional project with a configured capability, persistence, privacy, cache, test, and journey chain.
+See [`examples/final-consumer-contracts`](examples/final-consumer-contracts) for a
+fictional shared producer whose two consumers have different final contracts, an
+intentionally shallow test, and an explicit observed-acceptance UNKNOWN boundary.
 
 ## Configuration
 
@@ -255,7 +267,8 @@ Paths are resolved against the selected project root. Absolute paths and `..` tr
 the bounded source inventory. Defaults are derived from mapped source/test nodes.
 
 See [`docs/SCHEMA.md`](docs/SCHEMA.md) for complete node, edge, capability
-coverage, human-task, golden-journey, and typed-gap formats. Installation does not
+coverage, behavioral-contract, verification-evidence, human-task, golden-journey,
+and typed-gap formats. Installation does not
 require the developer to author these structures manually; the setup prompt directs
 the selected coding agent to populate them from project evidence.
 
@@ -274,7 +287,11 @@ is supplemented in v0.5.0 by fresh-session conceptual retrieval, a v0.4 bootstra
 upgrade that preserved project knowledge and custom instructions, and automatic
 post-upgrade retrieval in another fresh session.
 
-| Environment | Installed instruction | Status in v0.5.0 |
+v0.6.0 preserves those integration statuses; final-consumer contract verification
+was exercised through the engine and synthetic fixtures and does not promote any
+previously unverified agent integration.
+
+| Environment | Installed instruction | Status in v0.6.0 |
 | --- | --- | --- |
 | OpenAI Codex | `AGENTS.md` | Independently verified end to end |
 | Claude Code | `CLAUDE.md` | Documented mechanism; adapter tested; agent session unverified |
@@ -340,12 +357,14 @@ Use the same evidence-first loop for every material change:
    current source when freshness is stale or unknown.
 2. Inspect the earliest proven owner and actual writers/readers.
 3. Verify persistence/hydration, caches/invalidation, asynchronous stale/recovery behavior, privacy boundaries, and connected tests.
-4. Add or correct graph nodes and edges only when a source path or accepted document supports them.
-5. Record uncertainty as a typed gap with a reason and evidence path; do not invent a relationship to make validation green.
-6. Run the relevant project tests and structural validation.
-7. After the source and knowledge are reconciled, explicitly run
+4. Follow affected behavioral contracts to their required proof nodes. Do not use
+   a component test as final-consumer proof unless that is its declared scope.
+5. Add or correct graph nodes and edges only when a source path or accepted document supports them.
+6. Record uncertainty as a typed gap with a reason and evidence path; do not invent a relationship to make validation green.
+7. Run the relevant project tests and structural validation.
+8. After the source and knowledge are reconciled, explicitly run
    `reconcile --accept-current-evidence`.
-8. Run `check` and the impact query again. Do not finish while relevant evidence
+9. Run `check` and the impact query again. Do not finish while relevant evidence
    remains stale or unknown.
 
 After independent human changes, a developer can simply tell the AI:
@@ -369,7 +388,9 @@ coherent; it is not a freshness or functional acceptance result.
 `impact` exits `2` when a requested target is unknown and `3` when remembered
 relationships cannot be verified against the reconciled evidence baseline. Its
 output separates verified-current connections from stale or unknown remembered
-connections. An empty result is never proof that a target has no dependencies.
+connections. For affected capabilities it also reports required behavioral proof,
+recorded status, trusted freshness-aware status, and remaining UNKNOWN boundaries.
+An empty result is never proof that a target has no dependencies.
 
 ## Privacy and distribution
 
@@ -391,6 +412,8 @@ The package has no install dependencies. `npm install` is not required to run th
 
 - Lexical discovery is partial static evidence. Comments, dynamic imports, computed routes, and runtime data flow require review.
 - Freshness hashes are change detectors, not semantic correctness certificates.
+- A recorded test pass proves only its declared evidence level and scope; it is
+  not a guarantee of complete semantic correctness or human-visible acceptance.
 - A graph is durable memory, not exhaustive program analysis.
 - Impact results are conservative regression candidates, not a claim that every returned component will change.
 - Validation cannot detect every capability missing from the declared graph. A

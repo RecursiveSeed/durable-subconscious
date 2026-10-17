@@ -7,10 +7,10 @@ reinitializes `.durable-subconscious/`.
 ## One-time v0.3/v0.4 bootstrap
 
 Older packages do not contain the updater and cannot update themselves. Install
-the v0.5 package using the existing project-local npm method first:
+the v0.6 package using the existing project-local npm method first:
 
 ```sh
-npm install --save-dev github:RecursiveSeed/durable-subconscious#v0.5.0
+npm install --save-dev github:RecursiveSeed/durable-subconscious#v0.6.0
 ```
 
 Then review the bootstrap plan using the version that was previously installed:
@@ -42,8 +42,8 @@ npx --no-install durable-subconscious update --project . --to latest
 Then use the reported version explicitly for predictable application:
 
 ```sh
-npx --no-install durable-subconscious update --project . --to 0.5.1
-npx --no-install durable-subconscious update --project . --to 0.5.1 --apply
+npx --no-install durable-subconscious update --project . --to 0.6.0
+npx --no-install durable-subconscious update --project . --to 0.6.0 --apply
 ```
 
 `latest` reads stable `vMAJOR.MINOR.PATCH` GitHub tags. An explicit `--source`

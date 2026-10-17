@@ -131,7 +131,7 @@ function copyTargetPackage(destination, version) {
   lock.packages[''].version = version;
   fs.writeFileSync(lockFile, `${JSON.stringify(lock, null, 2)}\n`);
   const versionFile = path.join(destination, 'src', 'version.mjs');
-  fs.writeFileSync(versionFile, fs.readFileSync(versionFile, 'utf8').replace("PACKAGE_VERSION = '0.5.0'", `PACKAGE_VERSION = '${version}'`));
+  fs.writeFileSync(versionFile, fs.readFileSync(versionFile, 'utf8').replace("PACKAGE_VERSION = '0.6.0'", `PACKAGE_VERSION = '${version}'`));
   return packPackage(destination, path.join(path.dirname(destination), 'packages'));
 }
 
@@ -277,7 +277,7 @@ test('v0.3 and v0.4 bootstrap upgrades preserve fictional knowledge, gaps, fresh
       const applied = runCli(fixture.cli, ['update', '--project', fixture.root, '--bootstrap-from', version, '--agent', 'codex', '--apply'], { cwd: fixture.root });
       assert.equal(applied.status, 0, applied.stderr || applied.stdout);
       const report = JSON.parse(applied.stdout).result.result;
-      assert.equal(report.to, '0.5.0');
+      assert.equal(report.to, '0.6.0');
       assert.equal(report.reconciliation_performed, false);
       assert.equal(report.freshness.status, version.startsWith('0.4.') ? 'stale' : 'unknown');
       assert.equal(shaFile(fixture.graphFile), graphHash);
@@ -292,7 +292,7 @@ test('v0.3 and v0.4 bootstrap upgrades preserve fictional knowledge, gaps, fresh
         assert.match(content, /Preserve this fictional instruction/);
         assert.equal(content.split('<!-- durable-subconscious:integration:start -->').length - 1, 1);
       }
-      assert.equal(JSON.parse(fs.readFileSync(path.join(fixture.root, '.durable-subconscious', 'installation.json'))).installed_version, '0.5.0');
+      assert.equal(JSON.parse(fs.readFileSync(path.join(fixture.root, '.durable-subconscious', 'installation.json'))).installed_version, '0.6.0');
 
       const query = runCli(fixture.cli, ['query', 'observatory', 'beacon', '--project', fixture.root, '--json'], { cwd: fixture.root });
       assert.equal(query.status, version.startsWith('0.4.') ? 3 : 3, query.stderr);
@@ -310,54 +310,54 @@ test('future update is idempotent and interrupted or failed updates recover with
     const fixture = createLegacyFixture(parent, '0.4.0');
     let result = runCli(fixture.cli, ['update', '--project', fixture.root, '--bootstrap-from', '0.4.0', '--agent', 'codex', '--apply'], { cwd: fixture.root });
     assert.equal(result.status, 0, result.stderr);
-    const package051 = path.join(parent, 'package-0.5.1');
-    const package051Source = copyTargetPackage(package051, '0.5.1');
+    const package061 = path.join(parent, 'package-0.6.1');
+    const package061Source = copyTargetPackage(package061, '0.6.1');
     const graphHash = shaFile(fixture.graphFile);
     const guideBefore = fs.readFileSync(fixture.guide, 'utf8');
 
-    result = runCli(fixture.cli, ['update', '--project', fixture.root, '--to', '0.5.1', '--source', package051Source], { cwd: fixture.root });
+    result = runCli(fixture.cli, ['update', '--project', fixture.root, '--to', '0.6.1', '--source', package061Source], { cwd: fixture.root });
     assert.equal(result.status, 0, result.stderr);
     assert.equal(JSON.parse(result.stdout).plan.status, 'ready');
-    result = runCli(fixture.cli, ['update', '--project', fixture.root, '--to', '0.5.1', '--source', package051Source, '--apply'], { cwd: fixture.root });
+    result = runCli(fixture.cli, ['update', '--project', fixture.root, '--to', '0.6.1', '--source', package061Source, '--apply'], { cwd: fixture.root });
     assert.equal(result.status, 0, result.stderr || result.stdout);
-    assert.equal(JSON.parse(fs.readFileSync(path.join(fixture.root, 'node_modules', 'durable-subconscious', 'package.json'))).version, '0.5.1');
+    assert.equal(JSON.parse(fs.readFileSync(path.join(fixture.root, 'node_modules', 'durable-subconscious', 'package.json'))).version, '0.6.1');
     assert.equal(shaFile(fixture.graphFile), graphHash);
     assert.equal(fs.readFileSync(fixture.guide, 'utf8'), guideBefore);
 
-    const cli051 = installedCli(fixture.root);
-    const packageJsonAfter051 = fs.readFileSync(path.join(fixture.root, 'package.json'), 'utf8');
-    const lockAfter051 = fs.readFileSync(path.join(fixture.root, 'package-lock.json'), 'utf8');
-    result = runCli(cli051, ['update', '--project', fixture.root, '--to', '0.5.1', '--apply'], { cwd: fixture.root });
+    const cli061 = installedCli(fixture.root);
+    const packageJsonAfter061 = fs.readFileSync(path.join(fixture.root, 'package.json'), 'utf8');
+    const lockAfter061 = fs.readFileSync(path.join(fixture.root, 'package-lock.json'), 'utf8');
+    result = runCli(cli061, ['update', '--project', fixture.root, '--to', '0.6.1', '--apply'], { cwd: fixture.root });
     assert.equal(result.status, 0, result.stderr);
     assert.equal(JSON.parse(result.stdout).result.status, 'unchanged');
-    assert.equal(fs.readFileSync(path.join(fixture.root, 'package.json'), 'utf8'), packageJsonAfter051);
+    assert.equal(fs.readFileSync(path.join(fixture.root, 'package.json'), 'utf8'), packageJsonAfter061);
 
-    const package052 = path.join(parent, 'package-0.5.2');
-    const package052Source = copyTargetPackage(package052, '0.5.2');
-    result = runCli(cli051, ['update', '--project', fixture.root, '--to', '0.5.2', '--source', package052Source, '--apply'], {
+    const package062 = path.join(parent, 'package-0.6.2');
+    const package062Source = copyTargetPackage(package062, '0.6.2');
+    result = runCli(cli061, ['update', '--project', fixture.root, '--to', '0.6.2', '--source', package062Source, '--apply'], {
       cwd: fixture.root,
       env: { ...process.env, DURABLE_SUBCONSCIOUS_UPDATE_INTERRUPT_AFTER_INSTALL: '1' },
     });
     assert.notEqual(result.status, 0);
-    assert.equal(JSON.parse(fs.readFileSync(path.join(fixture.root, 'node_modules', 'durable-subconscious', 'package.json'))).version, '0.5.2');
-    const blocked = runCli(installedCli(fixture.root), ['update', '--project', fixture.root, '--to', '0.5.2', '--source', package052Source], { cwd: fixture.root });
+    assert.equal(JSON.parse(fs.readFileSync(path.join(fixture.root, 'node_modules', 'durable-subconscious', 'package.json'))).version, '0.6.2');
+    const blocked = runCli(installedCli(fixture.root), ['update', '--project', fixture.root, '--to', '0.6.2', '--source', package062Source], { cwd: fixture.root });
     assert.notEqual(blocked.status, 0);
     assert.match(blocked.stderr, /recover it with update --rollback/);
     const recovered = runCli(installedCli(fixture.root), ['update', '--project', fixture.root, '--rollback', 'latest'], { cwd: fixture.root });
     assert.equal(recovered.status, 0, recovered.stderr);
-    assert.equal(JSON.parse(fs.readFileSync(path.join(fixture.root, 'node_modules', 'durable-subconscious', 'package.json'))).version, '0.5.1');
-    assert.equal(fs.readFileSync(path.join(fixture.root, 'package.json'), 'utf8'), packageJsonAfter051);
-    assert.equal(fs.readFileSync(path.join(fixture.root, 'package-lock.json'), 'utf8'), lockAfter051);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(fixture.root, 'node_modules', 'durable-subconscious', 'package.json'))).version, '0.6.1');
+    assert.equal(fs.readFileSync(path.join(fixture.root, 'package.json'), 'utf8'), packageJsonAfter061);
+    assert.equal(fs.readFileSync(path.join(fixture.root, 'package-lock.json'), 'utf8'), lockAfter061);
     assert.equal(shaFile(fixture.graphFile), graphHash);
 
-    result = runCli(installedCli(fixture.root), ['update', '--project', fixture.root, '--to', '0.5.2', '--source', package052Source, '--apply'], {
+    result = runCli(installedCli(fixture.root), ['update', '--project', fixture.root, '--to', '0.6.2', '--source', package062Source, '--apply'], {
       cwd: fixture.root,
       env: { ...process.env, DURABLE_SUBCONSCIOUS_UPDATE_FAIL_AFTER_INSTALL: '1' },
     });
     assert.notEqual(result.status, 0);
-    assert.equal(JSON.parse(fs.readFileSync(path.join(fixture.root, 'node_modules', 'durable-subconscious', 'package.json'))).version, '0.5.1');
-    assert.equal(fs.readFileSync(path.join(fixture.root, 'package.json'), 'utf8'), packageJsonAfter051);
-    assert.equal(fs.readFileSync(path.join(fixture.root, 'package-lock.json'), 'utf8'), lockAfter051);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(fixture.root, 'node_modules', 'durable-subconscious', 'package.json'))).version, '0.6.1');
+    assert.equal(fs.readFileSync(path.join(fixture.root, 'package.json'), 'utf8'), packageJsonAfter061);
+    assert.equal(fs.readFileSync(path.join(fixture.root, 'package-lock.json'), 'utf8'), lockAfter061);
     assert.equal(shaFile(fixture.graphFile), graphHash);
   } finally {
     fs.rmSync(parent, { recursive: true, force: true });

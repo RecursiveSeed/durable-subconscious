@@ -34,6 +34,13 @@ index and then runs this same impact/freshness verification. Candidate ranking
 cannot turn stale or unknown evidence into verified knowledge. Rebuilding the
 concept index is not reconciliation.
 
+In v0.6, behavioral verification evidence uses the same freshness boundary.
+Impact output keeps a recorded pass or failure for history, but its trusted status
+becomes `unknown` when the required proof is stale or cannot be verified. Current
+proof means only that the recorded artifact is unchanged; it does not establish
+that the test was sufficient, complete, or a substitute for required observed
+acceptance.
+
 `check` also exits `3` when freshness is stale or unknown. Structural failures and
 strict-coverage gaps remain a separate exit `1`; freshness cannot convert those
 conditions into a pass.
@@ -129,7 +136,7 @@ corresponding project knowledge.
 ## Upgrading existing project knowledge
 
 Projects created before this freshness gate have no trusted fingerprint baseline.
-The v0.5 bootstrap/update workflow refreshes managed requirements while preserving
+The v0.6 bootstrap/update workflow refreshes managed requirements while preserving
 guide content and agent instructions. A missing baseline continues to report
 `unknown` until current source and knowledge have been reviewed and reconciliation
 is explicitly accepted; installation or adapter refresh alone never advances

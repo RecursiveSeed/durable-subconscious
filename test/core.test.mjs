@@ -765,8 +765,9 @@ test('canonical agent guide requires a post-change impact query before completio
 test('package metadata declares AGPL-3.0-only and no dependencies', () => {
   const packageJson = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'package.json')));
   assert.equal(packageJson.license, 'AGPL-3.0-only');
-  assert.equal(packageJson.version, '0.5.0');
+  assert.equal(packageJson.version, '0.6.0');
   assert.ok(packageJson.durableSubconscious.supportedUpgradeFrom.includes('0.4.x'));
+  assert.ok(packageJson.durableSubconscious.supportedUpgradeFrom.includes('0.5.x'));
   assert.equal(packageJson.dependencies, undefined);
   assert.equal(packageJson.devDependencies, undefined);
   assert.ok(packageJson.files.includes('docs'));

@@ -85,11 +85,11 @@ schema as part of normal setup.
 
 ## Upgrade from v0.3 or v0.4
 
-Those packages predate the updater, so first install v0.5 with the existing npm
+Those packages predate the updater, so first install v0.6 with the existing npm
 method:
 
 ```sh
-npm install --save-dev github:RecursiveSeed/durable-subconscious#v0.5.0
+npm install --save-dev github:RecursiveSeed/durable-subconscious#v0.6.0
 ```
 
 Then review and apply the one-time bootstrap, substituting the actual prior
@@ -104,13 +104,14 @@ The bootstrap preserves knowledge and custom instructions, refreshes managed
 requirements, and records the installed version. It does not reconcile evidence;
 missing freshness remains unknown and stale evidence remains stale.
 
-For later supported releases, discover the latest stable version, then plan and
-apply that exact version:
+For a v0.5 installation, or for later supported releases, discover the latest
+stable version, then plan and apply that exact version. To upgrade specifically to
+this release:
 
 ```sh
 npx --no-install durable-subconscious update --project . --to latest
-npx --no-install durable-subconscious update --project . --to 0.5.1
-npx --no-install durable-subconscious update --project . --to 0.5.1 --apply
+npx --no-install durable-subconscious update --project . --to 0.6.0
+npx --no-install durable-subconscious update --project . --to 0.6.0 --apply
 ```
 
 See [`docs/UPGRADING.md`](docs/UPGRADING.md) for compatibility checks,
@@ -171,9 +172,10 @@ Verify conceptual retrieval through the same freshness gate:
 npx --no-install durable-subconscious query "where is persistence owned" --project . --depth 1
 ```
 
-See `docs/SCHEMA.md` for capability coverage, golden journeys, typed gaps, and
-privacy/storage decisions. Structural success is not proof that arbitrary source
-contains no unrecorded capability.
+See `docs/SCHEMA.md` for capability coverage, behavioral contracts, verification
+evidence, golden journeys, typed gaps, and privacy/storage decisions. Structural
+success proves neither that arbitrary source contains no unrecorded capability nor
+that mapped final-consumer behavior passed.
 
 Persistent instructions direct routine maintenance after relevant changes. If
 source changes occur outside the active agent workflow, freshness becomes stale or

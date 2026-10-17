@@ -1,5 +1,74 @@
 # Release notes
 
+## v0.6.0 — Final-Consumer Contract Verification (2026-10-17)
+
+Durable Subconscious now distinguishes architectural connectivity from verified
+behavior. Existing capability nodes may optionally classify a requirement as a
+shared invariant or consumer-specific contract, declare the exact proof nodes
+needed to satisfy it, and retrieve the evidence level and scope through the normal
+focused impact path.
+
+Test nodes record executed evidence; journey nodes record observed runtime or
+human-visible evidence. Verification scope is component, integration, or final
+consumer. A contract passes only when every named proof at its required level and
+scope records a pass. A matching failure reports failure; missing, declared-only,
+mismatched, stale, or unavailable proof remains `unknown`. For a shared invariant,
+one passing consumer cannot certify the other required consumers.
+
+Verification evidence uses the existing provenance and freshness system. Impact
+output preserves the recorded historical status while reducing the trusted status
+to `unknown` when required proof is stale or cannot be verified. A current
+fingerprint still means only that the recorded bytes are unchanged; it is not a
+claim that the test is semantically complete.
+
+The extension is contained within existing capability, test, journey, impact, and
+freshness structures. No node or edge vocabulary was forked, and the graph,
+configuration, freshness, and installation schemas remain version `1`. Existing
+v0.5.0 graphs without behavioral contract metadata remain valid and report the
+new verification boundary as `not_declared`.
+
+The managed agent guide keeps verification proportional: find the owner, follow
+the affected contract, inspect its relevant proof, implement, test, and update
+knowledge. It does not require full-project end-to-end testing for every localized
+change. Developers still install once and let a supported agent maintain relevant
+knowledge through its persistent workflow.
+
+### Compatibility status
+
+Codex retains its previously independently verified fresh-session lifecycle.
+Claude Code, Cursor, GitHub Copilot, Gemini CLI, and OpenCode remain documented and
+adapter-tested but actual-agent-session **UNVERIFIED**. v0.6.0 does not claim
+universal compatibility or guaranteed instruction compliance.
+
+### Known limitations
+
+- Durable Subconscious records and freshness-checks verification artifacts; it
+  does not execute every project test automatically or understand whether an
+  arbitrary test is semantically sufficient.
+- Observed or human-visible acceptance remains separate from executed test proof
+  and stays unknown until appropriate observed evidence is recorded.
+- Structural validity, fresh evidence, and a passing test are distinct signals;
+  none alone guarantees complete behavioral correctness.
+- The focused twelve-system synthetic topology verifies bounded retrieval and
+  multi-consumer proof accounting, not production-scale performance.
+
+### Executed v0.6.0 release checks
+
+- 55 of 55 canonical core, freshness, retrieval, upgrade, adapter,
+  final-consumer, and packaged-example tests passed.
+- The synthetic regression kept its shallow producer test passing while a
+  deliberate control-panel regression was detected by the final-consumer test;
+  the unaffected archive consumer continued to pass.
+- A twelve-system connected synthetic topology required every named consumer
+  proof for its shared invariant and kept a depth-bounded impact query focused.
+- The published v0.5.0 tag upgraded through its real updater to the packed v0.6.0
+  candidate. Graph, configuration, freshness baseline, maps, and authored agent
+  instructions were preserved; the managed contract guide was added without
+  reconciliation.
+- The package dry run contained 55 intended files, no bundled dependencies, and
+  only independently created fictional examples. The dependency advisory audit
+  reported zero known vulnerabilities.
+
 ## v0.5.0 — Synapse-to-Storage Retrieval and Durable Updates (2026-10-14)
 
 This public-beta release retains the v0.4 graph, typed impact traversal,
